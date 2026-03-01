@@ -1,0 +1,678 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Flappy Bird JS - PowerUps Edition</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        body, html {
+            width: 100%;
+            height: 100%;
+            background-color: #2c3e50;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+            touch-action: none;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        #game-container {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            max-width: 480px;
+            background-color: #70c5ce;
+            box-shadow: 0 0 20px rgba(0,0,0,0.5);
+            overflow: hidden;
+        }
+
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+
+        .ui-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            pointer-events: none;
+            z-index: 10;
+            background: rgba(0, 0, 0, 0.3);
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        #score-board {
+            position: absolute;
+            top: 10%;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 50px;
+            font-weight: bold;
+            color: white;
+            -webkit-text-stroke: 2px black;
+            text-shadow: 3px 3px 0 #000;
+            z-index: 5;
+            pointer-events: none;
+        }
+
+        #effects-board {
+            position: absolute;
+            top: 20%;
+            left: 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            z-index: 5;
+            pointer-events: none;
+        }
+
+        .effect-badge {
+            background: rgba(0,0,0,0.5);
+            color: white;
+            padding: 5px 10px;
+            border-radius: 15px;
+            font-size: 14px;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            transition: opacity 0.3s;
+        }
+
+        .panel {
+            background: #ded895;
+            border: 4px solid #543847;
+            border-radius: 15px;
+            padding: 20px 40px;
+            text-align: center;
+            box-shadow: 0 5px 0 #543847;
+            pointer-events: auto;
+            color: #543847;
+        }
+
+        .panel h1 {
+            font-size: 30px;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+        }
+
+        .panel p {
+            font-size: 16px;
+            margin-bottom: 20px;
+            font-weight: bold;
+        }
+
+        .score-box {
+            background: rgba(255,255,255,0.5);
+            padding: 10px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+
+        .btn {
+            background: #e67e22;
+            color: white;
+            border: 3px solid #fff;
+            padding: 12px 30px;
+            font-size: 20px;
+            font-weight: bold;
+            border-radius: 8px;
+            cursor: pointer;
+            text-transform: uppercase;
+            box-shadow: 0 4px 0 #d35400;
+            transition: transform 0.1s;
+        }
+
+        .btn:active {
+            transform: translateY(4px);
+            box-shadow: 0 0 0 #d35400;
+        }
+    </style>
+</head>
+<body>
+
+<div id="game-container">
+    <canvas id="gameCanvas"></canvas>
+    
+    <div id="score-board" class="hidden">0</div>
+
+    <div id="effects-board"></div>
+
+    <div id="start-screen" class="ui-layer">
+        <div class="panel">
+            <h1>Flappy Power</h1>
+            <p>Thu thập Item để nhận Buff!</p>
+            <div style="font-size: 14px; text-align: left; margin-bottom: 15px; line-height: 1.5;">
+                🛡️ <b>Khiên:</b> Chống 1 lần đâm<br>
+                <i>(Bất tử 3s sau khi vỡ khiên)</i><br>
+                <br>
+                ⏳ <b>Slow Motion:</b> Chậm thời gian 8s
+            </div>
+            <button class="btn" id="start-btn">Start</button>
+        </div>
+    </div>
+
+    <div id="game-over-screen" class="ui-layer hidden">
+        <div class="panel">
+            <h1>Game Over!</h1>
+            <div class="score-box">
+                <p>Score: <span id="final-score">0</span></p>
+                <p>Best: <span id="best-score">0</span></p>
+            </div>
+            <button class="btn" id="restart-btn">Restart</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    const container = document.getElementById('game-container');
+
+    const startScreen = document.getElementById('start-screen');
+    const gameOverScreen = document.getElementById('game-over-screen');
+    const scoreBoard = document.getElementById('score-board');
+    const effectsBoard = document.getElementById('effects-board');
+    const finalScoreEl = document.getElementById('final-score');
+    const bestScoreEl = document.getElementById('best-score');
+    const startBtn = document.getElementById('start-btn');
+    const restartBtn = document.getElementById('restart-btn');
+
+    const GAME_STATE = { READY: 0, PLAYING: 1, GAMEOVER: 2 };
+    let currentState = GAME_STATE.READY;
+    
+    let frames = 0;
+    let score = 0;
+    let bestScore = localStorage.getItem('flappyPowerBest') || 0;
+
+    let baseGravity = 0;
+    let baseJumpForce = 0;
+    let basePipeSpeed = 0;
+    
+    let timeScale = 1;
+    let pipeSpeed = 0;
+    let pipeGap = 0;
+    let pipeWidth = 0;
+    let groundHeight = 0;
+
+    // Quản lý Power-ups & Trạng thái
+    let effects = {
+        shield: false,
+        invincibleTimer: 0, 
+        slowTimer: 0
+    };
+
+    const FPS = 60; 
+
+    function resizeCanvas() {
+        canvas.width = container.clientWidth;
+        canvas.height = container.clientHeight;
+
+        baseGravity = canvas.height * 0.0006;
+        baseJumpForce = canvas.height * -0.012;
+        basePipeSpeed = canvas.width * 0.007;
+        
+        pipeWidth = canvas.width * 0.15;
+        pipeGap = canvas.height * 0.28; 
+        groundHeight = canvas.height * 0.15;
+
+        if (bird) {
+            bird.radius = canvas.height * 0.02;
+            bird.x = canvas.width * 0.25;
+        }
+    }
+
+    window.addEventListener('resize', resizeCanvas);
+
+    function updateEffectsUI() {
+        effectsBoard.innerHTML = '';
+        if (effects.shield) {
+            effectsBoard.innerHTML += `<div class="effect-badge" style="background: #2980b9;">🛡️ Shield Active</div>`;
+        }
+        if (effects.slowTimer > 0) {
+            effectsBoard.innerHTML += `<div class="effect-badge" style="background: #f39c12;">⏳ Slow: ${Math.ceil(effects.slowTimer/FPS)}s</div>`;
+        }
+    }
+
+    const bird = {
+        x: 0, y: 0, radius: 0, velocity: 0, rotation: 0,
+
+        init() {
+            this.x = canvas.width * 0.25;
+            this.y = canvas.height / 2;
+            this.velocity = 0;
+            this.rotation = 0;
+        },
+
+        flap() {
+            this.velocity = baseJumpForce;
+        },
+
+        update() {
+            let currentGravity = baseGravity * (timeScale === 1 ? 1 : 0.6); 
+            
+            this.velocity += currentGravity;
+            this.y += this.velocity * timeScale;
+
+            if (this.velocity >= baseJumpForce) {
+                this.rotation = Math.min(Math.PI / 4, (this.velocity / baseJumpForce) * (-Math.PI / 8));
+            } else {
+                this.rotation = -Math.PI / 8;
+            }
+        },
+
+        draw() {
+            ctx.save();
+            ctx.translate(this.x, this.y);
+            ctx.rotate(this.rotation);
+
+            // Nhấp nháy nếu đang bất tử sau khi vỡ khiên
+            if (effects.invincibleTimer > 0 && Math.floor(frames / 5) % 2 === 0) {
+                ctx.globalAlpha = 0.5;
+            }
+
+            // Thân
+            ctx.beginPath();
+            ctx.arc(0, 0, this.radius, 0, Math.PI * 2);
+            ctx.fillStyle = '#f1c40f';
+            ctx.fill();
+            ctx.lineWidth = 2;
+            ctx.strokeStyle = '#000';
+            ctx.stroke();
+
+            // Mắt
+            ctx.beginPath();
+            ctx.arc(this.radius / 2, -this.radius / 4, this.radius / 3, 0, Math.PI * 2);
+            ctx.fillStyle = '#fff';
+            ctx.fill();
+            ctx.beginPath();
+            ctx.arc(this.radius / 2 + 1, -this.radius / 4, this.radius / 6, 0, Math.PI * 2);
+            ctx.fillStyle = '#000';
+            ctx.fill();
+
+            // Mỏ
+            ctx.beginPath();
+            ctx.moveTo(this.radius * 0.8, 0);
+            ctx.lineTo(this.radius * 1.6, 0);
+            ctx.lineTo(this.radius * 0.8, this.radius / 2);
+            ctx.fillStyle = '#e67e22';
+            ctx.fill();
+            ctx.stroke();
+
+            // Vẽ Khiên bảo vệ
+            if (effects.shield) {
+                ctx.beginPath();
+                ctx.arc(0, 0, this.radius * 1.5, 0, Math.PI * 2);
+                ctx.strokeStyle = '#3498db';
+                ctx.lineWidth = 3;
+                ctx.stroke();
+                ctx.fillStyle = 'rgba(52, 152, 219, 0.3)';
+                ctx.fill();
+            }
+
+            ctx.restore();
+        }
+    };
+
+    const collectables = {
+        items: [],
+        types: [
+            { id: 'SHIELD', color: '#3498db', symbol: '🛡️', chance: 50 },
+            { id: 'SLOW', color: '#f39c12', symbol: '⏳', chance: 50 }
+        ],
+
+        init() { this.items = []; },
+
+        spawn(x, y) {
+            let rand = Math.random() * 100;
+            let sum = 0;
+            let selectedType = this.types[0];
+            for (let t of this.types) {
+                sum += t.chance;
+                if (rand <= sum) {
+                    selectedType = t;
+                    break;
+                }
+            }
+
+            this.items.push({
+                x: x,
+                y: y,
+                type: selectedType,
+                radius: canvas.height * 0.025,
+                collected: false
+            });
+        },
+
+        update() {
+            for (let i = 0; i < this.items.length; i++) {
+                let item = this.items[i];
+                if (item.collected) continue;
+
+                item.x -= pipeSpeed;
+
+                let distToBird = Math.sqrt((bird.x - item.x)**2 + (bird.y - item.y)**2);
+                if (distToBird < bird.radius + item.radius) {
+                    item.collected = true;
+                    this.applyEffect(item.type.id);
+                }
+
+                if (item.x + item.radius < 0) {
+                    this.items.splice(i, 1);
+                    i--;
+                }
+            }
+        },
+
+        applyEffect(id) {
+            if (id === 'SHIELD') {
+                effects.shield = true;
+            } else if (id === 'SLOW') {
+                effects.slowTimer = 8 * FPS; // Tăng lên 8 giây
+            }
+            updateEffectsUI();
+        },
+
+        draw() {
+            for (let item of this.items) {
+                if (item.collected) continue;
+                
+                ctx.save();
+                ctx.translate(item.x, item.y);
+                
+                let hover = Math.sin(frames * 0.1) * 5;
+                
+                ctx.beginPath();
+                ctx.arc(0, hover, item.radius, 0, Math.PI * 2);
+                ctx.fillStyle = item.type.color;
+                ctx.fill();
+                ctx.lineWidth = 2;
+                ctx.strokeStyle = '#fff';
+                ctx.stroke();
+
+                ctx.fillStyle = '#fff';
+                ctx.font = `${item.radius}px Arial`;
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(item.type.symbol, 0, hover + 2);
+
+                ctx.restore();
+            }
+        }
+    };
+
+    const pipes = {
+        items: [],
+
+        init() { this.items = []; },
+
+        update() {
+            timeScale = (effects.slowTimer > 0) ? 0.5 : 1;
+            pipeSpeed = basePipeSpeed * timeScale;
+
+            if (this.items.length === 0 || 
+               (canvas.width - this.items[this.items.length - 1].x >= canvas.width * 0.55)) {
+                
+                let minHeight = canvas.height * 0.1;
+                let maxHeight = canvas.height - groundHeight - pipeGap - minHeight;
+                let topHeight = Math.random() * (maxHeight - minHeight) + minHeight;
+
+                this.items.push({
+                    x: canvas.width,
+                    topHeight: topHeight,
+                    passed: false,
+                    broken: false 
+                });
+
+                // 25% cơ hội sinh ra item giữa khe ống
+                if (Math.random() < 0.25) {
+                    collectables.spawn(canvas.width + pipeWidth/2, topHeight + pipeGap/2);
+                }
+            }
+
+            for (let i = 0; i < this.items.length; i++) {
+                let p = this.items[i];
+                p.x -= pipeSpeed;
+
+                if (p.x + pipeWidth < bird.x && !p.passed && !p.broken) {
+                    score++;
+                    scoreBoard.innerText = score;
+                    p.passed = true;
+                }
+
+                if (p.x + pipeWidth < 0) {
+                    this.items.shift();
+                    i--; 
+                }
+            }
+        },
+
+        draw() {
+            for (let p of this.items) {
+                if (p.broken) continue; 
+
+                let bottomY = p.topHeight + pipeGap;
+                let bottomHeight = canvas.height - groundHeight - bottomY;
+
+                ctx.fillStyle = '#2ecc71';
+                ctx.strokeStyle = '#27ae60';
+                ctx.lineWidth = 3;
+
+                ctx.fillRect(p.x, 0, pipeWidth, p.topHeight);
+                ctx.strokeRect(p.x, 0, pipeWidth, p.topHeight);
+                ctx.fillRect(p.x - 5, p.topHeight - 20, pipeWidth + 10, 20);
+                ctx.strokeRect(p.x - 5, p.topHeight - 20, pipeWidth + 10, 20);
+
+                ctx.fillRect(p.x, bottomY, pipeWidth, bottomHeight);
+                ctx.strokeRect(p.x, bottomY, pipeWidth, bottomHeight);
+                ctx.fillRect(p.x - 5, bottomY, pipeWidth + 10, 20);
+                ctx.strokeRect(p.x - 5, bottomY, pipeWidth + 10, 20);
+            }
+        }
+    };
+
+    const ground = {
+        x: 0,
+        draw() {
+            if (currentState === GAME_STATE.PLAYING) {
+                this.x -= pipeSpeed;
+                if (this.x <= -canvas.width) this.x = 0;
+            }
+
+            ctx.fillStyle = '#ded895';
+            ctx.fillRect(0, canvas.height - groundHeight, canvas.width, groundHeight);
+            
+            ctx.fillStyle = '#73bf2e';
+            ctx.fillRect(0, canvas.height - groundHeight, canvas.width, 15);
+            ctx.strokeStyle = '#543847';
+            ctx.lineWidth = 2;
+            
+            ctx.save();
+            ctx.beginPath();
+            for(let i = this.x; i < canvas.width; i += 30) {
+                ctx.moveTo(i, canvas.height - groundHeight);
+                ctx.lineTo(i - 15, canvas.height - groundHeight + 15);
+            }
+            ctx.stroke();
+            ctx.restore();
+
+            ctx.strokeRect(0, canvas.height - groundHeight, canvas.width, 15);
+        }
+    };
+
+    function checkCollision() {
+        if (effects.invincibleTimer > 0) return false;
+
+        if (bird.y + bird.radius >= canvas.height - groundHeight) {
+            return handleDamage();
+        }
+        
+        if (bird.y - bird.radius <= 0) {
+            bird.y = bird.radius; 
+            bird.velocity = 0;
+        }
+
+        for (let p of pipes.items) {
+            if (p.broken) continue;
+
+            let cx = Math.max(p.x, Math.min(bird.x, p.x + pipeWidth));
+            
+            let cyTop = Math.max(0, Math.min(bird.y, p.topHeight));
+            let distTop = Math.sqrt((bird.x - cx) ** 2 + (bird.y - cyTop) ** 2);
+            if (distTop < bird.radius) return handleDamage(p);
+
+            let bottomY = p.topHeight + pipeGap;
+            let cyBottom = Math.max(bottomY, Math.min(bird.y, canvas.height - groundHeight));
+            let distBottom = Math.sqrt((bird.x - cx) ** 2 + (bird.y - cyBottom) ** 2);
+            if (distBottom < bird.radius) return handleDamage(p);
+        }
+        return false;
+    }
+
+    function handleDamage(pipeHit = null) {
+        if (effects.shield) {
+            effects.shield = false;
+            effects.invincibleTimer = FPS * 3; // Tăng thời gian bất tử lên 3 giây sau khi vỡ khiên
+            if (pipeHit) pipeHit.broken = true; 
+            updateEffectsUI();
+            return false;
+        }
+        return true; 
+    }
+
+    function updateEffectsTimers() {
+        let changed = false;
+        if (effects.slowTimer > 0) { 
+            effects.slowTimer--; 
+            if(effects.slowTimer === 0) changed = true; 
+        }
+        if (effects.invincibleTimer > 0) effects.invincibleTimer--;
+
+        if (changed || frames % FPS === 0) {
+            updateEffectsUI();
+        }
+    }
+
+    function initGame() {
+        resizeCanvas();
+        bird.init();
+        pipes.init();
+        collectables.init();
+        score = 0;
+        scoreBoard.innerText = score;
+        frames = 0;
+        
+        effects = { shield: false, invincibleTimer: 0, slowTimer: 0 };
+        updateEffectsUI();
+    }
+
+    function setGameOver() {
+        currentState = GAME_STATE.GAMEOVER;
+        scoreBoard.classList.add('hidden');
+        effectsBoard.innerHTML = '';
+        gameOverScreen.classList.remove('hidden');
+        
+        if (score > bestScore) {
+            bestScore = score;
+            localStorage.setItem('flappyPowerBest', bestScore);
+        }
+
+        finalScoreEl.innerText = score;
+        bestScoreEl.innerText = bestScore;
+    }
+
+    function loop() {
+        ctx.fillStyle = '#70c5ce';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        if (currentState === GAME_STATE.READY) {
+            ground.draw();
+            bird.draw();
+        } 
+        else if (currentState === GAME_STATE.PLAYING) {
+            updateEffectsTimers();
+            
+            pipes.update();
+            pipes.draw();
+            
+            collectables.update();
+            collectables.draw();
+
+            ground.draw();
+            
+            bird.update();
+            bird.draw();
+
+            if (checkCollision()) {
+                setGameOver();
+            }
+        } 
+        else if (currentState === GAME_STATE.GAMEOVER) {
+            pipes.draw();
+            collectables.draw();
+            ground.draw();
+            bird.draw(); 
+        }
+
+        frames++;
+        requestAnimationFrame(loop);
+    }
+
+    function handleInput(e) {
+        if (e.type === 'keydown' && e.code !== 'Space') return;
+        if (e.cancelable && e.type !== 'mousedown') e.preventDefault();
+
+        if (currentState === GAME_STATE.READY) {
+            currentState = GAME_STATE.PLAYING;
+            startScreen.classList.add('hidden');
+            scoreBoard.classList.remove('hidden');
+            bird.flap();
+        } 
+        else if (currentState === GAME_STATE.PLAYING) {
+            bird.flap();
+        }
+    }
+
+    window.addEventListener('keydown', handleInput);
+    canvas.addEventListener('mousedown', handleInput);
+    canvas.addEventListener('touchstart', handleInput, { passive: false });
+
+    startBtn.addEventListener('click', () => {
+        currentState = GAME_STATE.PLAYING;
+        startScreen.classList.add('hidden');
+        scoreBoard.classList.remove('hidden');
+        bird.flap();
+    });
+
+    restartBtn.addEventListener('click', () => {
+        initGame();
+        currentState = GAME_STATE.PLAYING;
+        gameOverScreen.classList.add('hidden');
+        scoreBoard.classList.remove('hidden');
+        bird.flap();
+    });
+
+    initGame();
+    loop();
+</script>
+</body>
+</html>
