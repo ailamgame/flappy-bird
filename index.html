@@ -1,6 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
-
+<html lang="vi">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
@@ -15,8 +14,7 @@
             -webkit-user-select: none;
         }
 
-        body,
-        html {
+        body, html {
             width: 100%;
             height: 100%;
             background-color: #1a1a1a;
@@ -100,12 +98,12 @@
 
         #effects-board {
             position: absolute;
-            top: 5%; /* Nằm ngay dưới điểm số (điểm số đang ở top: 10%) */
+            top: 5%;
             left: 50%;
-            transform: translateX(-50%); /* Canh ra chính giữa màn hình */
+            transform: translateX(-50%);
             display: flex;
             flex-direction: column;
-            align-items: center; /* Canh giữa các badge bên trong */
+            align-items: center;
             gap: 10px;
             z-index: 5;
             pointer-events: none;
@@ -266,7 +264,7 @@
         <canvas id="gameCanvas"></canvas>
 
         <div id="top-bar">
-            <div class="stats-text" id="level-display">Lv: 1</div>
+            <div class="stats-text" id="level-display">Cấp: 1</div>
             <div class="stats-text" id="star-display">⭐ 0</div>
         </div>
 
@@ -275,24 +273,24 @@
 
         <div id="start-screen" class="ui-layer">
             <div class="panel">
-                <h1>Flappy Stars</h1>
+                <h1>Flappy Sao</h1>
                 <p>Vượt ống để qua màn!</p>
                 <div style="font-size: 12px; text-align: left; margin-bottom: 15px; line-height: 1.5;">
-                    🛡️ <b>Khiên:</b> Chống 1 lần đâm ống (Max 3)<br>
-                    ⭐ <b>Ngôi Sao:</b> Thu thập để mua Skin<br>
+                    🛡️ <b>Khiên:</b> Chống 1 lần đâm ống (Tối đa 3)<br>
+                    ⭐ <b>Ngôi Sao:</b> Thu thập để mua Trang phục<br>
                     🏁 <b>Đích:</b> Ống vàng + vạch caro đen trắng<br>
                     ⚠️ <b>Chú ý:</b> Chạm đất sẽ CHẾT LUÔN!
                 </div>
                 <div class="btn-container">
-                    <button class="btn btn-blue" id="btn-shop-start">Shop</button>
-                    <button class="btn" id="btn-start">Play</button>
+                    <button class="btn btn-blue" id="btn-shop-start">Cửa Hàng</button>
+                    <button class="btn" id="btn-start">Bắt Đầu</button>
                 </div>
             </div>
         </div>
 
         <div id="shop-screen" class="ui-layer hidden">
             <div class="panel">
-                <h1>Cửa hàng Skin</h1>
+                <h1>Trang Phục</h1>
                 <p>Đang có: <span id="shop-stars">0</span> ⭐</p>
                 <div class="shop-items" id="shop-list">
                 </div>
@@ -302,14 +300,14 @@
 
         <div id="game-over-screen" class="ui-layer hidden">
             <div class="panel">
-                <h1>Game Over</h1>
+                <h1>Kết Thúc</h1>
                 <div class="score-box">
-                    <div>Score: <br><b id="final-score" style="font-size: 24px;">0</b></div>
-                    <div>Best: <br><b id="best-score" style="font-size: 24px;">0</b></div>
+                    <div>Điểm: <br><b id="final-score" style="font-size: 24px;">0</b></div>
+                    <div>Kỷ Lục: <br><b id="best-score" style="font-size: 24px;">0</b></div>
                 </div>
                 <div class="btn-container">
-                    <button class="btn btn-blue" id="btn-shop-over">Shop</button>
-                    <button class="btn" id="btn-restart">Restart</button>
+                    <button class="btn btn-blue" id="btn-shop-over">Cửa Hàng</button>
+                    <button class="btn" id="btn-restart">Chơi Lại</button>
                 </div>
             </div>
         </div>
@@ -356,14 +354,6 @@
         let currentSkinId = localStorage.getItem('flappyCurrentSkin') || 'yellow';
 
         // Skins Data
-        // const SKINS = [
-        //     { id: 'yellow', name: 'Gà Vàng', color: '#f1c40f', price: 0 },
-        //     { id: 'red', name: 'Chim Điên', color: '#e74c3c', price: 20 },
-        //     { id: 'blue', name: 'Băng Giá', color: '#3498db', price: 50 },
-        //     { id: 'black', name: 'Ninja', color: '#2c3e50', price: 100 },
-        //     { id: 'pink', name: 'Kẹo Ngọt', color: '#fd79a8', price: 150 }
-        // ];
-
         const SKINS = [
             { id: 'pink', name: 'Kẹo Ngọt', color: '#fd79a8', price: 0 },
             { id: 'yellow', name: 'Gà Vàng', color: '#f1c40f', price: 100 },
@@ -395,7 +385,7 @@
         }
 
         function updateTopBar() {
-            ui.levelDisplay.innerText = `Lv: ${currentLevel}`;
+            ui.levelDisplay.innerText = `Cấp: ${currentLevel}`;
             ui.starDisplay.innerText = `⭐ ${totalStars}`;
         }
 
@@ -467,63 +457,6 @@
                 }
             },
 
-            // draw() {
-            //     ctx.save();
-            //     ctx.translate(this.x, this.y);
-            //     ctx.rotate(this.rotation);
-
-            //     if (effects.invincibleTimer > 0 && Math.floor(frames / 5) % 2 === 0) {
-            //         ctx.globalAlpha = 0.5;
-            //     }
-
-            //     // Thân
-            //     ctx.beginPath();
-            //     ctx.arc(0, 0, this.radius, 0, Math.PI * 2);
-            //     ctx.fillStyle = this.color;
-            //     ctx.fill();
-            //     ctx.lineWidth = 2;
-            //     ctx.strokeStyle = '#000';
-            //     ctx.stroke();
-
-            //     // Mắt
-            //     ctx.beginPath();
-            //     ctx.arc(this.radius / 2, -this.radius / 4, this.radius / 3, 0, Math.PI * 2);
-            //     ctx.fillStyle = '#fff';
-            //     ctx.fill();
-            //     ctx.beginPath();
-            //     ctx.arc(this.radius / 2 + 1, -this.radius / 4, this.radius / 6, 0, Math.PI * 2);
-            //     ctx.fillStyle = '#000';
-            //     ctx.fill();
-
-            //     // Mỏ
-            //     ctx.beginPath();
-            //     ctx.moveTo(this.radius * 0.8, 0);
-            //     ctx.lineTo(this.radius * 1.6, 0);
-            //     ctx.lineTo(this.radius * 0.8, this.radius / 2);
-            //     ctx.fillStyle = '#e67e22';
-            //     ctx.fill();
-            //     ctx.stroke();
-
-            //     // Băng đô Ninja
-            //     if (currentSkinId === 'black') {
-            //         ctx.fillStyle = '#e74c3c'; 
-            //         ctx.fillRect(-this.radius, -this.radius*0.8, this.radius*2, this.radius*0.4);
-            //     }
-
-            //     // Khiên
-            //     if (effects.shieldCount > 0) {
-            //         ctx.beginPath();
-            //         ctx.arc(0, 0, this.radius * 1.5, 0, Math.PI * 2);
-            //         ctx.strokeStyle = '#3498db';
-            //         ctx.lineWidth = 2 + effects.shieldCount; 
-            //         ctx.stroke();
-            //         ctx.fillStyle = `rgba(52, 152, 219, ${0.2 * effects.shieldCount})`;
-            //         ctx.fill();
-            //     }
-
-            //     ctx.restore();
-            // }
-
             draw() {
                 ctx.save();
                 ctx.translate(this.x, this.y);
@@ -549,7 +482,7 @@
                 ctx.arc(this.radius / 2, -this.radius / 4, this.radius / 3, 0, Math.PI * 2);
                 ctx.fillStyle = '#fff';
                 ctx.fill();
-                // Tròng đen (sẽ nhìn bực tức hơn nếu là skin Chim Điên)
+                // Tròng đen
                 ctx.beginPath();
                 let pupilOffsetX = currentSkinId === 'red' ? 2 : 1;
                 ctx.arc(this.radius / 2 + pupilOffsetX, -this.radius / 4, this.radius / 6, 0, Math.PI * 2);
@@ -566,7 +499,6 @@
                 ctx.stroke();
 
                 // --- 4. VẼ PHỤ KIỆN THEO TỪNG SKIN ---
-
                 if (currentSkinId === 'yellow') {
                     // Gà Vàng: Thêm mào gà đỏ
                     ctx.fillStyle = '#e74c3c';
@@ -578,14 +510,12 @@
                 else if (currentSkinId === 'red') {
                     // Chim Điên: Lông mày xếch và đuôi nhọn
                     ctx.fillStyle = '#000';
-                    // Lông mày
                     ctx.beginPath();
                     ctx.moveTo(this.radius * 0.1, -this.radius * 0.4);
                     ctx.lineTo(this.radius * 0.9, -this.radius * 0.7);
                     ctx.lineTo(this.radius * 0.9, -this.radius * 0.5);
                     ctx.lineTo(this.radius * 0.1, -this.radius * 0.2);
                     ctx.fill();
-                    // Lông đuôi
                     ctx.beginPath();
                     ctx.moveTo(-this.radius, 0);
                     ctx.lineTo(-this.radius * 1.6, -this.radius * 0.4);
@@ -605,9 +535,7 @@
                 else if (currentSkinId === 'black') {
                     // Ninja: Băng đô đỏ có dây bay bay phía sau
                     ctx.fillStyle = '#e74c3c';
-                    // Vòng băng đô
                     ctx.fillRect(-this.radius, -this.radius * 0.7, this.radius * 2, this.radius * 0.3);
-                    // Dây bay phía sau (chuyển động theo nhịp vỗ cánh)
                     let flapOffset = Math.sin(frames * 0.5) * 5;
                     ctx.beginPath();
                     ctx.moveTo(-this.radius * 0.8, -this.radius * 0.5);
@@ -628,9 +556,9 @@
                     ctx.fillStyle = '#f1c40f';
                     ctx.beginPath();
                     ctx.moveTo(-this.radius * 0.6, -this.radius * 0.7);
-                    ctx.lineTo(-this.radius * 0.8, -this.radius * 1.5); // Gai trái
-                    ctx.lineTo(0, -this.radius * 1.1);                  // Giữa
-                    ctx.lineTo(this.radius * 0.8, -this.radius * 1.5);  // Gai phải
+                    ctx.lineTo(-this.radius * 0.8, -this.radius * 1.5);
+                    ctx.lineTo(0, -this.radius * 1.1);
+                    ctx.lineTo(this.radius * 0.8, -this.radius * 1.5);
                     ctx.lineTo(this.radius * 0.6, -this.radius * 0.7);
                     ctx.closePath();
                     ctx.fill();
@@ -737,11 +665,11 @@
             init() { this.items = []; },
 
             getRequiredPipesForLevel(lv) {
-                return 10 + (lv - 1) * 5; // Lv1: 10, Lv2: 15, Lv3: 20...
+                return 10 + (lv - 1) * 5; // Cấp 1: 10, Cấp 2: 15, Cấp 3: 20...
             },
 
             update() {
-                // Tăng tốc độ theo level
+                // Tăng tốc độ theo cấp độ
                 let speedMultiplier = 1 + ((currentLevel - 1) * 0.05);
                 pipeSpeed = basePipeSpeed * speedMultiplier;
                 let currentPipeGap = pipeGap * Math.max(0.7, 1 - ((currentLevel - 1) * 0.02));
@@ -755,26 +683,22 @@
                     let maxHeight = canvas.height - groundHeight - currentPipeGap - minHeight;
                     let topHeight = Math.random() * (maxHeight - minHeight) + minHeight;
 
-                    // Kiểm tra xem đây có phải là ống đích (Finish Pipe) không
+                    // Đếm số ống để gắn mác ống đích
                     spawnedPipesCount++;
                     let isFinishLine = (spawnedPipesCount === reqPipes);
 
-                    // Nếu ống vượt qua mức reqPipes (sau khi level up), reset logic ở hàm level up
-                    // Đảm bảo không sinh ống trong khoảng khắc chuyển level ngay lập tức
-                    if (spawnedPipesCount <= reqPipes) {
-                        this.items.push({
-                            x: canvas.width,
-                            topHeight: topHeight,
-                            passed: false,
-                            broken: false,
-                            gap: currentPipeGap,
-                            isFinishLine: isFinishLine
-                        });
+                    this.items.push({
+                        x: canvas.width,
+                        topHeight: topHeight,
+                        passed: false,
+                        broken: false,
+                        gap: currentPipeGap,
+                        isFinishLine: isFinishLine
+                    });
 
-                        // Sinh item (Không sinh ở ống đích)
-                        if (!isFinishLine && Math.random() < 0.4) {
-                            collectables.spawn(canvas.width + pipeWidth / 2, topHeight + currentPipeGap / 2);
-                        }
+                    // Sinh item (Không sinh ở ống đích)
+                    if (!isFinishLine && Math.random() < 0.4) {
+                        collectables.spawn(canvas.width + pipeWidth / 2, topHeight + currentPipeGap / 2);
                     }
                 }
 
@@ -834,7 +758,7 @@
                             }
                         }
 
-                        // Vẽ chữ FINISH
+                        // Vẽ chữ ĐÍCH
                         ctx.save();
                         ctx.translate(p.x + pipeWidth / 2, p.topHeight - 30);
                         ctx.fillStyle = 'white';
@@ -842,8 +766,8 @@
                         ctx.textAlign = 'center';
                         ctx.lineWidth = 3;
                         ctx.strokeStyle = 'black';
-                        ctx.strokeText("FINISH", 0, 0);
-                        ctx.fillText("FINISH", 0, 0);
+                        ctx.strokeText("ĐÍCH", 0, 0);
+                        ctx.fillText("ĐÍCH", 0, 0);
                         ctx.restore();
                     }
                 }
@@ -852,9 +776,9 @@
 
         function doLevelUp() {
             currentLevel++;
-            spawnedPipesCount = 0; // Reset đếm số lượng ống cho level mới
+            spawnedPipesCount = 0; // Reset đếm số lượng ống cho cấp độ mới
 
-            // Thưởng Ngôi sao khi qua màn (10 sao * Level)
+            // Thưởng Ngôi sao khi qua màn (10 sao * Cấp độ)
             totalStars += currentLevel * 10;
             saveData();
 
@@ -862,7 +786,7 @@
             container.style.backgroundColor = BG_COLORS[(currentLevel - 1) % BG_COLORS.length];
 
             // Cập nhật UI
-            ui.levelDisplay.innerText = `Lv: ${currentLevel}`;
+            ui.levelDisplay.innerText = `Cấp: ${currentLevel}`;
             ui.starDisplay.innerText = `⭐ ${totalStars}`;
 
             // Tạo hiệu ứng nhá sáng
@@ -900,7 +824,7 @@
 
         // --- LOGIC ---
         function checkCollision() {
-            if (bird.y + bird.radius >= canvas.height - groundHeight) return true; // Chết luôn
+            if (bird.y + bird.radius >= canvas.height - groundHeight) return true; // Chạm đất là chết luôn
 
             if (bird.y - bird.radius <= 0) {
                 bird.y = bird.radius;
@@ -1120,5 +1044,4 @@
         requestAnimationFrame(loop);
     </script>
 </body>
-
 </html>
