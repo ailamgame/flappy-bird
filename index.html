@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Flappy Bird | AI Làm Game?</title>
+     <title>Flappy Bird | AI Làm Game?</title>
     <link rel="icon" type="image/png" href="flappy-bird.png">
     <style>
         * {
@@ -31,10 +31,9 @@
             width: 100%;
             height: 100%;
             max-width: 480px;
-            background-color: #70c5ce;
+            background-color: #70c5ce; /* Màu nền cố định */
             box-shadow: 0 0 20px rgba(0, 0, 0, 0.8);
             overflow: hidden;
-            transition: background-color 1s;
         }
 
         canvas {
@@ -324,8 +323,8 @@
         // Data Storage
         let bestScore = parseInt(localStorage.getItem('flappyStarsBest')) || 0;
         let totalStars = parseInt(localStorage.getItem('flappyTotalStars')) || 0;
-        let ownedSkins = JSON.parse(localStorage.getItem('flappySkins')) || ['pink'];
-        let currentSkinId = localStorage.getItem('flappyCurrentSkin') || 'pink';
+        let ownedSkins = JSON.parse(localStorage.getItem('flappySkins')) || ['yellow'];
+        let currentSkinId = localStorage.getItem('flappyCurrentSkin') || 'yellow';
 
         // Skins Data
         const SKINS = [
@@ -337,15 +336,11 @@
             { id: 'black', name: 'Ninja', color: '#2c3e50', price: 9999 },
         ];
 
-        // Backgrounds theo cấp độ
-        const BG_COLORS = ['#70c5ce', '#1abc9c', '#3498db', '#9b59b6', '#d35400', '#2c3e50'];
-
         // Physics
         let baseGravity = 0, baseJumpForce = 0, basePipeSpeed = 0;
         let pipeSpeed = 0, pipeGap = 0, pipeWidth = 0, groundHeight = 0;
 
-        // Effects state (Thêm flashTimer để làm hiệu ứng nháy sáng màn hình)
-        let effects = { shieldCount: 0, invincibleTimer: 0, flashTimer: 0 };
+        let effects = { shieldCount: 0, invincibleTimer: 0 };
 
         const FPS = 60;
         const frameInterval = 1000 / FPS;
@@ -442,7 +437,7 @@
                     ctx.globalAlpha = 0.5;
                 }
 
-                // 1. Vẽ thân chim
+                // --- 1. Vẽ thân chim ---
                 ctx.beginPath();
                 ctx.arc(0, 0, this.radius, 0, Math.PI * 2);
                 ctx.fillStyle = this.color;
@@ -451,18 +446,20 @@
                 ctx.strokeStyle = '#000';
                 ctx.stroke();
 
-                // 2. Vẽ Mắt chim
+                // --- 2. Vẽ Mắt chim ---
+                // Tròng trắng
                 ctx.beginPath();
                 ctx.arc(this.radius / 2, -this.radius / 4, this.radius / 3, 0, Math.PI * 2);
                 ctx.fillStyle = '#fff';
                 ctx.fill();
+                // Tròng đen
                 ctx.beginPath();
                 let pupilOffsetX = currentSkinId === 'red' ? 2 : 1;
                 ctx.arc(this.radius / 2 + pupilOffsetX, -this.radius / 4, this.radius / 6, 0, Math.PI * 2);
                 ctx.fillStyle = '#000';
                 ctx.fill();
 
-                // 3. Vẽ Mỏ chim
+                // --- 3. Vẽ Mỏ chim ---
                 ctx.beginPath();
                 ctx.moveTo(this.radius * 0.8, 0);
                 ctx.lineTo(this.radius * 1.6, 0);
@@ -471,7 +468,7 @@
                 ctx.fill();
                 ctx.stroke();
 
-                // 4. VẼ PHỤ KIỆN THEO TỪNG SKIN
+                // --- 4. VẼ PHỤ KIỆN THEO TỪNG SKIN ---
                 if (currentSkinId === 'yellow') {
                     // Gà Vàng: Thêm mào gà đỏ
                     ctx.fillStyle = '#e74c3c';
@@ -642,10 +639,12 @@
             },
 
             update() {
-                // Tăng tốc độ theo cấp độ
-                let speedMultiplier = 1 + ((currentLevel - 1) * 0.05);
+                // Tối đa độ khó ở cấp độ 6 (Tốc độ và khoảng cách không đổi từ level 6 trở đi)
+                let difficultyLevel = Math.min(currentLevel, 6);
+
+                let speedMultiplier = 1 + ((difficultyLevel - 1) * 0.05);
                 pipeSpeed = basePipeSpeed * speedMultiplier;
-                let currentPipeGap = pipeGap * Math.max(0.7, 1 - ((currentLevel - 1) * 0.02));
+                let currentPipeGap = pipeGap * Math.max(0.7, 1 - ((difficultyLevel - 1) * 0.02));
 
                 let reqPipes = this.getRequiredPipesForLevel(currentLevel);
 
@@ -679,7 +678,7 @@
                     let p = this.items[i];
                     p.x -= pipeSpeed;
 
-                    // KIỂM TRA ĐÃ BAY QUA ỐNG (Không phụ thuộc vào việc ống bị vỡ hay không)
+                    // KIỂM TRA ĐÃ BAY QUA ỐNG
                     if (p.x + pipeWidth < bird.x && !p.passed) {
                         p.passed = true;
 
@@ -689,7 +688,7 @@
                             ui.scoreBoard.innerText = score;
                         }
 
-                        // Xử lý khi bay qua ống đích (kể cả khi đâm vỡ bằng khiên vẫn tính qua màn)
+                        // Xử lý khi bay qua ống đích
                         if (p.isFinishLine) {
                             doLevelUp();
                         }
@@ -760,15 +759,9 @@
             totalStars += currentLevel * 10;
             saveData();
 
-            // Thay đổi nền
-            container.style.backgroundColor = BG_COLORS[(currentLevel - 1) % BG_COLORS.length];
-
             // Cập nhật UI
             ui.levelDisplay.innerText = `Cấp: ${currentLevel}`;
             ui.starDisplay.innerText = `⭐ ${totalStars}`;
-
-            // Tạo hiệu ứng nhá sáng 15 frames
-            effects.flashTimer = 15;
         }
 
         // --- GROUND ---
@@ -852,11 +845,10 @@
             ui.scoreBoard.innerText = score;
             frames = 0;
             lastTimestamp = performance.now();
-            effects = { shieldCount: 0, invincibleTimer: 0, flashTimer: 0 };
+            effects = { shieldCount: 0, invincibleTimer: 0 };
 
             updateTopBar();
             updateEffectsUI();
-            container.style.backgroundColor = BG_COLORS[0];
             ui.scoreBoard.classList.add('hidden');
         }
 
@@ -974,13 +966,6 @@
 
                     bird.update();
                     bird.draw();
-
-                    // Xử lý vẽ flash khi qua màn
-                    if (effects.flashTimer > 0) {
-                        ctx.fillStyle = `rgba(255, 255, 255, ${effects.flashTimer / 15})`;
-                        ctx.fillRect(0, 0, canvas.width, canvas.height);
-                        effects.flashTimer--;
-                    }
 
                     if (checkCollision()) {
                         setGameOver();
