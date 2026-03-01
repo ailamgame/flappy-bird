@@ -1,9 +1,11 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>My Thối - Levels & Skins</title>
+    <title>Flappy Bird | AI Làm Game?</title>
+    <link rel="icon" type="image/png" href="flappy-bird.png">
     <style>
         * {
             box-sizing: border-box;
@@ -13,7 +15,8 @@
             -webkit-user-select: none;
         }
 
-        body, html {
+        body,
+        html {
             width: 100%;
             height: 100%;
             background-color: #1a1a1a;
@@ -31,7 +34,7 @@
             height: 100%;
             max-width: 480px;
             background-color: #70c5ce;
-            box-shadow: 0 0 20px rgba(0,0,0,0.8);
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.8);
             overflow: hidden;
             transition: background-color 1s;
         }
@@ -61,7 +64,7 @@
             display: none !important;
         }
 
-        /* Top Bar cho Điểm, Level, Coin */
+        /* Top Bar */
         #top-bar {
             position: absolute;
             top: 5%;
@@ -97,17 +100,19 @@
 
         #effects-board {
             position: absolute;
-            top: 25%;
-            left: 10px;
+            top: 5%; /* Nằm ngay dưới điểm số (điểm số đang ở top: 10%) */
+            left: 50%;
+            transform: translateX(-50%); /* Canh ra chính giữa màn hình */
             display: flex;
             flex-direction: column;
+            align-items: center; /* Canh giữa các badge bên trong */
             gap: 10px;
             z-index: 5;
             pointer-events: none;
         }
 
         .effect-badge {
-            background: rgba(0,0,0,0.5);
+            background: rgba(0, 0, 0, 0.5);
             color: white;
             padding: 5px 10px;
             border-radius: 15px;
@@ -118,6 +123,7 @@
             gap: 5px;
         }
 
+        /* Panels */
         .panel {
             background: #ded895;
             border: 4px solid #543847;
@@ -138,18 +144,24 @@
         }
 
         .panel p {
-            font-size: 16px;
+            font-size: 15px;
             margin-bottom: 15px;
             font-weight: bold;
         }
 
         .score-box {
-            background: rgba(255,255,255,0.5);
+            background: rgba(255, 255, 255, 0.5);
             padding: 10px;
             border-radius: 10px;
             margin-bottom: 15px;
             display: flex;
             justify-content: space-around;
+        }
+
+        .btn-container {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
         }
 
         .btn {
@@ -164,7 +176,6 @@
             text-transform: uppercase;
             box-shadow: 0 4px 0 #d35400;
             transition: transform 0.1s;
-            margin: 5px;
             flex: 1;
         }
 
@@ -173,15 +184,22 @@
             box-shadow: 0 0 0 #d35400;
         }
 
-        .btn-blue { background: #3498db; box-shadow: 0 4px 0 #2980b9; }
-        .btn-blue:active { box-shadow: 0 0 0 #2980b9; }
-        .btn-green { background: #2ecc71; box-shadow: 0 4px 0 #27ae60; }
-        .btn-green:active { box-shadow: 0 0 0 #27ae60; }
+        .btn-blue {
+            background: #3498db;
+            box-shadow: 0 4px 0 #2980b9;
+        }
 
-        .btn-container {
-            display: flex;
-            gap: 10px;
-            justify-content: center;
+        .btn-blue:active {
+            box-shadow: 0 0 0 #2980b9;
+        }
+
+        .btn-green {
+            background: #2ecc71;
+            box-shadow: 0 4px 0 #27ae60;
+        }
+
+        .btn-green:active {
+            box-shadow: 0 0 0 #27ae60;
         }
 
         /* Shop UI */
@@ -195,7 +213,7 @@
         }
 
         .shop-item {
-            background: rgba(255,255,255,0.6);
+            background: rgba(255, 255, 255, 0.6);
             border: 2px solid #543847;
             border-radius: 10px;
             padding: 10px;
@@ -223,714 +241,884 @@
             width: 100%;
         }
 
-        .btn-buy { background: #f1c40f; color: #000; box-shadow: 0 3px 0 #f39c12; }
-        .btn-select { background: #3498db; box-shadow: 0 3px 0 #2980b9; }
-        .btn-selected { background: #2ecc71; box-shadow: 0 3px 0 #27ae60; cursor: default;}
+        .btn-buy {
+            background: #f1c40f;
+            color: #000;
+            box-shadow: 0 3px 0 #f39c12;
+        }
+
+        .btn-select {
+            background: #3498db;
+            box-shadow: 0 3px 0 #2980b9;
+        }
+
+        .btn-selected {
+            background: #2ecc71;
+            box-shadow: 0 3px 0 #27ae60;
+            cursor: default;
+        }
     </style>
 </head>
+
 <body>
 
-<div id="game-container">
-    <canvas id="gameCanvas"></canvas>
-    
-    <div id="top-bar">
-        <div class="stats-text" id="level-display">Lv: 1</div>
-        <div class="stats-text" id="coin-display">🪙 0</div>
-    </div>
+    <div id="game-container">
+        <canvas id="gameCanvas"></canvas>
 
-    <div id="score-board" class="hidden">0</div>
-    <div id="effects-board"></div>
-
-    <div id="start-screen" class="ui-layer">
-        <div class="panel">
-            <h1>Flappy Legend</h1>
-            <p>Vượt 10 ống để qua màn!</p>
-            <div style="font-size: 13px; text-align: left; margin-bottom: 15px; line-height: 1.5;">
-                🛡️ <b>Khiên:</b> Chống đâm ống (Max 3)<br>
-                🪙 <b>Coin:</b> Mua skin trong Shop<br>
-                ⚠️ <b>Chạm đất:</b> Chết luôn!
-            </div>
-            <div class="btn-container">
-                <button class="btn btn-blue" id="btn-shop-start">Shop</button>
-                <button class="btn" id="btn-start">Play</button>
-            </div>
+        <div id="top-bar">
+            <div class="stats-text" id="level-display">Lv: 1</div>
+            <div class="stats-text" id="star-display">⭐ 0</div>
         </div>
-    </div>
 
-    <div id="shop-screen" class="ui-layer hidden">
-        <div class="panel">
-            <h1>Cửa hàng</h1>
-            <p>Coin hiện có: <span id="shop-coins">0</span> 🪙</p>
-            <div class="shop-items" id="shop-list">
+        <div id="score-board" class="hidden">0</div>
+        <div id="effects-board"></div>
+
+        <div id="start-screen" class="ui-layer">
+            <div class="panel">
+                <h1>Flappy Stars</h1>
+                <p>Vượt ống để qua màn!</p>
+                <div style="font-size: 12px; text-align: left; margin-bottom: 15px; line-height: 1.5;">
+                    🛡️ <b>Khiên:</b> Chống 1 lần đâm ống (Max 3)<br>
+                    ⭐ <b>Ngôi Sao:</b> Thu thập để mua Skin<br>
+                    🏁 <b>Đích:</b> Ống vàng + vạch caro đen trắng<br>
+                    ⚠️ <b>Chú ý:</b> Chạm đất sẽ CHẾT LUÔN!
                 </div>
-            <button class="btn" id="btn-close-shop">Đóng</button>
+                <div class="btn-container">
+                    <button class="btn btn-blue" id="btn-shop-start">Shop</button>
+                    <button class="btn" id="btn-start">Play</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="shop-screen" class="ui-layer hidden">
+            <div class="panel">
+                <h1>Cửa hàng Skin</h1>
+                <p>Đang có: <span id="shop-stars">0</span> ⭐</p>
+                <div class="shop-items" id="shop-list">
+                </div>
+                <button class="btn" id="btn-close-shop" style="width:100%">Đóng</button>
+            </div>
+        </div>
+
+        <div id="game-over-screen" class="ui-layer hidden">
+            <div class="panel">
+                <h1>Game Over</h1>
+                <div class="score-box">
+                    <div>Score: <br><b id="final-score" style="font-size: 24px;">0</b></div>
+                    <div>Best: <br><b id="best-score" style="font-size: 24px;">0</b></div>
+                </div>
+                <div class="btn-container">
+                    <button class="btn btn-blue" id="btn-shop-over">Shop</button>
+                    <button class="btn" id="btn-restart">Restart</button>
+                </div>
+            </div>
         </div>
     </div>
 
-    <div id="level-complete-screen" class="ui-layer hidden">
-        <div class="panel">
-            <h1>Qua Màn!</h1>
-            <p>Tuyệt vời, bạn đã hoàn thành Lv <span id="lc-level">1</span></p>
-            <div class="score-box" style="flex-direction: column; align-items: center;">
-                <div>Thưởng qua màn: <b style="color:#d35400">+<span id="lc-bonus">0</span> 🪙</b></div>
-            </div>
-            <div class="btn-container">
-                <button class="btn btn-blue" id="btn-shop-next">Shop</button>
-                <button class="btn btn-green" id="btn-next-level">Next</button>
-            </div>
-        </div>
-    </div>
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const container = document.getElementById('game-container');
 
-    <div id="game-over-screen" class="ui-layer hidden">
-        <div class="panel">
-            <h1>Game Over</h1>
-            <div class="score-box">
-                <div>Score: <br><b id="final-score" style="font-size: 24px;">0</b></div>
-                <div>Best: <br><b id="best-score" style="font-size: 24px;">0</b></div>
-            </div>
-            <div class="btn-container">
-                <button class="btn btn-blue" id="btn-shop-over">Shop</button>
-                <button class="btn" id="btn-restart">Restart</button>
-            </div>
-        </div>
-    </div>
-</div>
+        // UI Elements
+        const screens = {
+            start: document.getElementById('start-screen'),
+            shop: document.getElementById('shop-screen'),
+            gameOver: document.getElementById('game-over-screen')
+        };
 
-<script>
-    const canvas = document.getElementById('gameCanvas');
-    const ctx = canvas.getContext('2d');
-    const container = document.getElementById('game-container');
+        const ui = {
+            scoreBoard: document.getElementById('score-board'),
+            effectsBoard: document.getElementById('effects-board'),
+            levelDisplay: document.getElementById('level-display'),
+            starDisplay: document.getElementById('star-display'),
+            shopList: document.getElementById('shop-list'),
+            shopStars: document.getElementById('shop-stars')
+        };
 
-    // UI Elements
-    const screens = {
-        start: document.getElementById('start-screen'),
-        shop: document.getElementById('shop-screen'),
-        levelComplete: document.getElementById('level-complete-screen'),
-        gameOver: document.getElementById('game-over-screen')
-    };
-    
-    const ui = {
-        scoreBoard: document.getElementById('score-board'),
-        effectsBoard: document.getElementById('effects-board'),
-        levelDisplay: document.getElementById('level-display'),
-        coinDisplay: document.getElementById('coin-display'),
-        shopList: document.getElementById('shop-list'),
-        shopCoins: document.getElementById('shop-coins')
-    };
+        // States
+        const GAME_STATE = { READY: 0, PLAYING: 1, GAMEOVER: 2, SHOP: 3 };
+        let currentState = GAME_STATE.READY;
+        let previousState = GAME_STATE.READY;
 
-    // States
-    const GAME_STATE = { READY: 0, PLAYING: 1, GAMEOVER: 2, LEVEL_COMPLETE: 3, SHOP: 4 };
-    let currentState = GAME_STATE.READY;
-    let previousState = GAME_STATE.READY; // Dùng để quay lại từ shop
-    
-    // Game Data
-    let frames = 0;
-    let score = 0;
-    let levelScore = 0; // Điểm tính trong level hiện tại
-    let currentLevel = 1;
-    const PIPES_PER_LEVEL = 10;
-    
-    // Lưu trữ LocalStorage
-    let bestScore = parseInt(localStorage.getItem('flappyLegendBest')) || 0;
-    let totalCoins = parseInt(localStorage.getItem('flappyLegendCoins')) || 0;
-    let ownedSkins = JSON.parse(localStorage.getItem('flappyLegendSkins')) || ['yellow'];
-    let currentSkinId = localStorage.getItem('flappyLegendCurrentSkin') || 'yellow';
+        // Game Data
+        let frames = 0;
+        let score = 0;
 
-    // Skins Data
-    const SKINS = [
-        { id: 'yellow', name: 'Gà Vàng', color: '#f1c40f', price: 0 },
-        { id: 'red', name: 'Chim Điên', color: '#e74c3c', price: 50 },
-        { id: 'blue', name: 'Băng Giá', color: '#3498db', price: 100 },
-        { id: 'black', name: 'Ninja', color: '#2c3e50', price: 200 }
-    ];
+        // Level & Finish Logic
+        let currentLevel = 1;
+        let spawnedPipesCount = 0; // Đếm số ống đã sinh ra trong level
 
-    // Backgrounds theo level
-    const BG_COLORS = ['#70c5ce', '#2c3e50', '#d35400', '#8e44ad', '#16a085'];
+        // Data Storage
+        let bestScore = parseInt(localStorage.getItem('flappyStarsBest')) || 0;
+        let totalStars = parseInt(localStorage.getItem('flappyTotalStars')) || 0;
+        let ownedSkins = JSON.parse(localStorage.getItem('flappySkins')) || ['yellow'];
+        let currentSkinId = localStorage.getItem('flappyCurrentSkin') || 'yellow';
 
-    // Physics (cơ bản)
-    let baseGravity = 0, baseJumpForce = 0, basePipeSpeed = 0;
-    let pipeSpeed = 0, pipeGap = 0, pipeWidth = 0, groundHeight = 0;
+        // Skins Data
+        // const SKINS = [
+        //     { id: 'yellow', name: 'Gà Vàng', color: '#f1c40f', price: 0 },
+        //     { id: 'red', name: 'Chim Điên', color: '#e74c3c', price: 20 },
+        //     { id: 'blue', name: 'Băng Giá', color: '#3498db', price: 50 },
+        //     { id: 'black', name: 'Ninja', color: '#2c3e50', price: 100 },
+        //     { id: 'pink', name: 'Kẹo Ngọt', color: '#fd79a8', price: 150 }
+        // ];
 
-    let effects = { shieldCount: 0, invincibleTimer: 0 };
+        const SKINS = [
+            { id: 'pink', name: 'Kẹo Ngọt', color: '#fd79a8', price: 0 },
+            { id: 'yellow', name: 'Gà Vàng', color: '#f1c40f', price: 100 },
+            { id: 'red', name: 'Chim Điên', color: '#e74c3c', price: 300 },
+            { id: 'blue', name: 'Băng Giá', color: '#3498db', price: 500 },
+            { id: 'gold', name: 'Hoàng Đế', color: '#f39c12', price: 1000 },
+            { id: 'black', name: 'Ninja', color: '#2c3e50', price: 9999 },
+        ];
 
-    const FPS = 60; 
-    const frameInterval = 1000 / FPS;
-    let lastTimestamp = 0;
+        // Backgrounds theo level
+        const BG_COLORS = ['#70c5ce', '#1abc9c', '#3498db', '#9b59b6', '#d35400', '#2c3e50'];
 
-    function saveData() {
-        localStorage.setItem('flappyLegendBest', bestScore);
-        localStorage.setItem('flappyLegendCoins', totalCoins);
-        localStorage.setItem('flappyLegendSkins', JSON.stringify(ownedSkins));
-        localStorage.setItem('flappyLegendCurrentSkin', currentSkinId);
-        updateTopBar();
-    }
+        // Physics
+        let baseGravity = 0, baseJumpForce = 0, basePipeSpeed = 0;
+        let pipeSpeed = 0, pipeGap = 0, pipeWidth = 0, groundHeight = 0;
 
-    function updateTopBar() {
-        ui.levelDisplay.innerText = `Lv: ${currentLevel}`;
-        ui.coinDisplay.innerText = `🪙 ${totalCoins}`;
-    }
+        let effects = { shieldCount: 0, invincibleTimer: 0 };
 
-    function resizeCanvas() {
-        canvas.width = container.clientWidth;
-        canvas.height = container.clientHeight;
+        const FPS = 60;
+        const frameInterval = 1000 / FPS;
+        let lastTimestamp = 0;
 
-        baseGravity = canvas.height * 0.0006;
-        baseJumpForce = canvas.height * -0.012;
-        basePipeSpeed = canvas.width * 0.007;
-        
-        pipeWidth = canvas.width * 0.15;
-        pipeGap = canvas.height * 0.28; 
-        groundHeight = canvas.height * 0.15;
-
-        if (bird.radius === 0) {
-            bird.init();
-        } else {
-            bird.radius = canvas.height * 0.02;
-            bird.x = canvas.width * 0.25;
+        function saveData() {
+            localStorage.setItem('flappyStarsBest', bestScore);
+            localStorage.setItem('flappyTotalStars', totalStars);
+            localStorage.setItem('flappySkins', JSON.stringify(ownedSkins));
+            localStorage.setItem('flappyCurrentSkin', currentSkinId);
+            updateTopBar();
         }
-    }
 
-    window.addEventListener('resize', resizeCanvas);
-
-    function showScreen(screenName) {
-        Object.values(screens).forEach(s => s.classList.add('hidden'));
-        if (screenName) screens[screenName].classList.remove('hidden');
-    }
-
-    function updateEffectsUI() {
-        ui.effectsBoard.innerHTML = '';
-        if (effects.shieldCount > 0) {
-            let shieldsText = '🛡️'.repeat(effects.shieldCount);
-            ui.effectsBoard.innerHTML += `<div class="effect-badge">${shieldsText} Khiên: ${effects.shieldCount}/3</div>`;
+        function updateTopBar() {
+            ui.levelDisplay.innerText = `Lv: ${currentLevel}`;
+            ui.starDisplay.innerText = `⭐ ${totalStars}`;
         }
-    }
 
-    // --- BIRD ---
-    const bird = {
-        x: 0, y: 0, radius: 0, velocity: 0, rotation: 0, color: '#f1c40f',
+        function resizeCanvas() {
+            canvas.width = container.clientWidth;
+            canvas.height = container.clientHeight;
 
-        init() {
-            this.radius = canvas.height * 0.02;
-            this.x = canvas.width * 0.25;
-            this.y = canvas.height / 2;
-            this.velocity = 0;
-            this.rotation = 0;
-            this.updateSkinColor();
-        },
+            baseGravity = canvas.height * 0.0006;
+            baseJumpForce = canvas.height * -0.012;
+            basePipeSpeed = canvas.width * 0.007;
 
-        updateSkinColor() {
-            const skin = SKINS.find(s => s.id === currentSkinId);
-            this.color = skin ? skin.color : '#f1c40f';
-        },
+            pipeWidth = canvas.width * 0.15;
+            pipeGap = canvas.height * 0.28;
+            groundHeight = canvas.height * 0.15;
 
-        flap() {
-            this.velocity = baseJumpForce;
-        },
-
-        update() {
-            this.velocity += baseGravity;
-            this.y += this.velocity;
-
-            if (this.velocity >= baseJumpForce) {
-                this.rotation = Math.min(Math.PI / 4, (this.velocity / baseJumpForce) * (-Math.PI / 8));
+            if (bird.radius === 0) {
+                bird.init();
             } else {
-                this.rotation = -Math.PI / 8;
+                bird.radius = canvas.height * 0.02;
+                bird.x = canvas.width * 0.25;
             }
-        },
-
-        draw() {
-            ctx.save();
-            ctx.translate(this.x, this.y);
-            ctx.rotate(this.rotation);
-
-            if (effects.invincibleTimer > 0 && Math.floor(frames / 5) % 2 === 0) {
-                ctx.globalAlpha = 0.5;
-            }
-
-            // Thân
-            ctx.beginPath();
-            ctx.arc(0, 0, this.radius, 0, Math.PI * 2);
-            ctx.fillStyle = this.color;
-            ctx.fill();
-            ctx.lineWidth = 2;
-            ctx.strokeStyle = '#000';
-            ctx.stroke();
-
-            // Mắt
-            ctx.beginPath();
-            ctx.arc(this.radius / 2, -this.radius / 4, this.radius / 3, 0, Math.PI * 2);
-            ctx.fillStyle = '#fff';
-            ctx.fill();
-            ctx.beginPath();
-            ctx.arc(this.radius / 2 + 1, -this.radius / 4, this.radius / 6, 0, Math.PI * 2);
-            ctx.fillStyle = '#000';
-            ctx.fill();
-
-            // Mỏ
-            ctx.beginPath();
-            ctx.moveTo(this.radius * 0.8, 0);
-            ctx.lineTo(this.radius * 1.6, 0);
-            ctx.lineTo(this.radius * 0.8, this.radius / 2);
-            ctx.fillStyle = '#e67e22';
-            ctx.fill();
-            ctx.stroke();
-
-            // Phụ kiện Ninja (nếu là skin black)
-            if (currentSkinId === 'black') {
-                ctx.fillStyle = '#e74c3c'; // Băng đô đỏ
-                ctx.fillRect(-this.radius, -this.radius*0.8, this.radius*2, this.radius*0.4);
-            }
-
-            // Khiên
-            if (effects.shieldCount > 0) {
-                ctx.beginPath();
-                ctx.arc(0, 0, this.radius * 1.5, 0, Math.PI * 2);
-                ctx.strokeStyle = '#3498db';
-                ctx.lineWidth = 2 + effects.shieldCount; 
-                ctx.stroke();
-                ctx.fillStyle = `rgba(52, 152, 219, ${0.2 * effects.shieldCount})`;
-                ctx.fill();
-            }
-
-            ctx.restore();
         }
-    };
 
-    // --- COLLECTIBLES ---
-    const collectables = {
-        items: [],
-        types: [
-            { id: 'SHIELD', color: '#3498db', symbol: '🛡️', chance: 30 },
-            { id: 'COIN', color: '#f1c40f', symbol: '🪙', chance: 70 }
-        ],
+        window.addEventListener('resize', resizeCanvas);
 
-        init() { this.items = []; },
+        function showScreen(screenName) {
+            Object.values(screens).forEach(s => s.classList.add('hidden'));
+            if (screenName) screens[screenName].classList.remove('hidden');
+        }
 
-        spawn(x, y) {
-            let rand = Math.random() * 100;
-            let sum = 0, selectedType = this.types[0];
-            for (let t of this.types) {
-                sum += t.chance;
-                if (rand <= sum) { selectedType = t; break; }
+        function updateEffectsUI() {
+            ui.effectsBoard.innerHTML = '';
+            if (effects.shieldCount > 0) {
+                let shieldsText = '🛡️'.repeat(effects.shieldCount);
+                ui.effectsBoard.innerHTML += `<div class="effect-badge">${shieldsText} Khiên: ${effects.shieldCount}/3</div>`;
             }
+        }
 
-            this.items.push({
-                x: x, y: y, type: selectedType, radius: canvas.height * 0.025, collected: false
-            });
-        },
+        // --- BIRD ---
+        const bird = {
+            x: 0, y: 0, radius: 0, velocity: 0, rotation: 0, color: '#f1c40f',
 
-        update() {
-            for (let i = 0; i < this.items.length; i++) {
-                let item = this.items[i];
-                if (item.collected) continue;
+            init() {
+                this.radius = canvas.height * 0.02;
+                this.x = canvas.width * 0.25;
+                this.y = canvas.height / 2;
+                this.velocity = 0;
+                this.rotation = 0;
+                this.updateSkinColor();
+            },
 
-                item.x -= pipeSpeed;
+            updateSkinColor() {
+                const skin = SKINS.find(s => s.id === currentSkinId);
+                this.color = skin ? skin.color : '#f1c40f';
+            },
 
-                let distToBird = Math.sqrt((bird.x - item.x)**2 + (bird.y - item.y)**2);
-                if (distToBird < bird.radius + item.radius) {
-                    item.collected = true;
-                    this.applyEffect(item.type.id);
+            flap() {
+                this.velocity = baseJumpForce;
+            },
+
+            update() {
+                this.velocity += baseGravity;
+                this.y += this.velocity;
+
+                if (this.velocity >= baseJumpForce) {
+                    this.rotation = Math.min(Math.PI / 4, (this.velocity / baseJumpForce) * (-Math.PI / 8));
+                } else {
+                    this.rotation = -Math.PI / 8;
                 }
+            },
 
-                if (item.x + item.radius < 0) {
-                    this.items.splice(i, 1);
-                    i--;
-                }
-            }
-        },
+            // draw() {
+            //     ctx.save();
+            //     ctx.translate(this.x, this.y);
+            //     ctx.rotate(this.rotation);
 
-        applyEffect(id) {
-            if (id === 'SHIELD') {
-                if (effects.shieldCount < 3) effects.shieldCount++;
-                updateEffectsUI();
-            } else if (id === 'COIN') {
-                totalCoins++;
-                saveData();
-            }
-        },
+            //     if (effects.invincibleTimer > 0 && Math.floor(frames / 5) % 2 === 0) {
+            //         ctx.globalAlpha = 0.5;
+            //     }
 
-        draw() {
-            for (let item of this.items) {
-                if (item.collected) continue;
+            //     // Thân
+            //     ctx.beginPath();
+            //     ctx.arc(0, 0, this.radius, 0, Math.PI * 2);
+            //     ctx.fillStyle = this.color;
+            //     ctx.fill();
+            //     ctx.lineWidth = 2;
+            //     ctx.strokeStyle = '#000';
+            //     ctx.stroke();
+
+            //     // Mắt
+            //     ctx.beginPath();
+            //     ctx.arc(this.radius / 2, -this.radius / 4, this.radius / 3, 0, Math.PI * 2);
+            //     ctx.fillStyle = '#fff';
+            //     ctx.fill();
+            //     ctx.beginPath();
+            //     ctx.arc(this.radius / 2 + 1, -this.radius / 4, this.radius / 6, 0, Math.PI * 2);
+            //     ctx.fillStyle = '#000';
+            //     ctx.fill();
+
+            //     // Mỏ
+            //     ctx.beginPath();
+            //     ctx.moveTo(this.radius * 0.8, 0);
+            //     ctx.lineTo(this.radius * 1.6, 0);
+            //     ctx.lineTo(this.radius * 0.8, this.radius / 2);
+            //     ctx.fillStyle = '#e67e22';
+            //     ctx.fill();
+            //     ctx.stroke();
+
+            //     // Băng đô Ninja
+            //     if (currentSkinId === 'black') {
+            //         ctx.fillStyle = '#e74c3c'; 
+            //         ctx.fillRect(-this.radius, -this.radius*0.8, this.radius*2, this.radius*0.4);
+            //     }
+
+            //     // Khiên
+            //     if (effects.shieldCount > 0) {
+            //         ctx.beginPath();
+            //         ctx.arc(0, 0, this.radius * 1.5, 0, Math.PI * 2);
+            //         ctx.strokeStyle = '#3498db';
+            //         ctx.lineWidth = 2 + effects.shieldCount; 
+            //         ctx.stroke();
+            //         ctx.fillStyle = `rgba(52, 152, 219, ${0.2 * effects.shieldCount})`;
+            //         ctx.fill();
+            //     }
+
+            //     ctx.restore();
+            // }
+
+            draw() {
                 ctx.save();
-                ctx.translate(item.x, item.y);
-                let hover = Math.sin(frames * 0.1) * 5;
-                
+                ctx.translate(this.x, this.y);
+                ctx.rotate(this.rotation);
+
+                // Nhấp nháy nếu đang bất tử sau khi vỡ khiên
+                if (effects.invincibleTimer > 0 && Math.floor(frames / 5) % 2 === 0) {
+                    ctx.globalAlpha = 0.5;
+                }
+
+                // --- 1. Vẽ thân chim ---
                 ctx.beginPath();
-                ctx.arc(0, hover, item.radius, 0, Math.PI * 2);
-                ctx.fillStyle = item.type.color;
+                ctx.arc(0, 0, this.radius, 0, Math.PI * 2);
+                ctx.fillStyle = this.color;
                 ctx.fill();
                 ctx.lineWidth = 2;
-                ctx.strokeStyle = '#fff';
+                ctx.strokeStyle = '#000';
                 ctx.stroke();
 
+                // --- 2. Vẽ Mắt chim ---
+                // Tròng trắng
+                ctx.beginPath();
+                ctx.arc(this.radius / 2, -this.radius / 4, this.radius / 3, 0, Math.PI * 2);
                 ctx.fillStyle = '#fff';
-                ctx.font = `${item.radius}px Arial`;
-                ctx.textAlign = 'center';
-                ctx.textBaseline = 'middle';
-                ctx.fillText(item.type.symbol, 0, hover + 2);
+                ctx.fill();
+                // Tròng đen (sẽ nhìn bực tức hơn nếu là skin Chim Điên)
+                ctx.beginPath();
+                let pupilOffsetX = currentSkinId === 'red' ? 2 : 1;
+                ctx.arc(this.radius / 2 + pupilOffsetX, -this.radius / 4, this.radius / 6, 0, Math.PI * 2);
+                ctx.fillStyle = '#000';
+                ctx.fill();
+
+                // --- 3. Vẽ Mỏ chim ---
+                ctx.beginPath();
+                ctx.moveTo(this.radius * 0.8, 0);
+                ctx.lineTo(this.radius * 1.6, 0);
+                ctx.lineTo(this.radius * 0.8, this.radius / 2);
+                ctx.fillStyle = '#e67e22';
+                ctx.fill();
+                ctx.stroke();
+
+                // --- 4. VẼ PHỤ KIỆN THEO TỪNG SKIN ---
+
+                if (currentSkinId === 'yellow') {
+                    // Gà Vàng: Thêm mào gà đỏ
+                    ctx.fillStyle = '#e74c3c';
+                    ctx.beginPath();
+                    ctx.arc(0, -this.radius * 0.8, this.radius * 0.35, 0, Math.PI, true);
+                    ctx.fill();
+                    ctx.stroke();
+                }
+                else if (currentSkinId === 'red') {
+                    // Chim Điên: Lông mày xếch và đuôi nhọn
+                    ctx.fillStyle = '#000';
+                    // Lông mày
+                    ctx.beginPath();
+                    ctx.moveTo(this.radius * 0.1, -this.radius * 0.4);
+                    ctx.lineTo(this.radius * 0.9, -this.radius * 0.7);
+                    ctx.lineTo(this.radius * 0.9, -this.radius * 0.5);
+                    ctx.lineTo(this.radius * 0.1, -this.radius * 0.2);
+                    ctx.fill();
+                    // Lông đuôi
+                    ctx.beginPath();
+                    ctx.moveTo(-this.radius, 0);
+                    ctx.lineTo(-this.radius * 1.6, -this.radius * 0.4);
+                    ctx.lineTo(-this.radius * 0.9, -this.radius * 0.1);
+                    ctx.fill();
+                }
+                else if (currentSkinId === 'blue') {
+                    // Băng giá: Mào pha lê cyan
+                    ctx.fillStyle = '#00ffff';
+                    ctx.beginPath();
+                    ctx.moveTo(-this.radius * 0.2, -this.radius * 0.8);
+                    ctx.lineTo(this.radius * 0.2, -this.radius * 1.5);
+                    ctx.lineTo(this.radius * 0.5, -this.radius * 0.7);
+                    ctx.fill();
+                    ctx.stroke();
+                }
+                else if (currentSkinId === 'black') {
+                    // Ninja: Băng đô đỏ có dây bay bay phía sau
+                    ctx.fillStyle = '#e74c3c';
+                    // Vòng băng đô
+                    ctx.fillRect(-this.radius, -this.radius * 0.7, this.radius * 2, this.radius * 0.3);
+                    // Dây bay phía sau (chuyển động theo nhịp vỗ cánh)
+                    let flapOffset = Math.sin(frames * 0.5) * 5;
+                    ctx.beginPath();
+                    ctx.moveTo(-this.radius * 0.8, -this.radius * 0.5);
+                    ctx.lineTo(-this.radius * 1.8, -this.radius * 0.8 + flapOffset);
+                    ctx.lineTo(-this.radius * 1.6, -this.radius * 0.3 + flapOffset);
+                    ctx.fill();
+                    ctx.stroke();
+                }
+                else if (currentSkinId === 'pink') {
+                    // Kẹo ngọt: Má hồng cute
+                    ctx.fillStyle = 'rgba(255, 105, 180, 0.7)';
+                    ctx.beginPath();
+                    ctx.arc(this.radius * 0.2, this.radius * 0.3, this.radius * 0.25, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+                else if (currentSkinId === 'gold') {
+                    // Hoàng Đế: Vương miện vàng
+                    ctx.fillStyle = '#f1c40f';
+                    ctx.beginPath();
+                    ctx.moveTo(-this.radius * 0.6, -this.radius * 0.7);
+                    ctx.lineTo(-this.radius * 0.8, -this.radius * 1.5); // Gai trái
+                    ctx.lineTo(0, -this.radius * 1.1);                  // Giữa
+                    ctx.lineTo(this.radius * 0.8, -this.radius * 1.5);  // Gai phải
+                    ctx.lineTo(this.radius * 0.6, -this.radius * 0.7);
+                    ctx.closePath();
+                    ctx.fill();
+                    ctx.stroke();
+                }
+
+                // --- 5. Vẽ Khiên bảo vệ ---
+                if (effects.shieldCount > 0) {
+                    ctx.beginPath();
+                    ctx.arc(0, 0, this.radius * 1.6, 0, Math.PI * 2);
+                    ctx.strokeStyle = '#3498db';
+                    ctx.lineWidth = 2 + effects.shieldCount;
+                    ctx.stroke();
+                    ctx.fillStyle = `rgba(52, 152, 219, ${0.15 * effects.shieldCount})`;
+                    ctx.fill();
+                }
+
                 ctx.restore();
             }
-        }
-    };
+        };
 
-    // --- PIPES ---
-    const pipes = {
-        items: [],
+        // --- COLLECTIBLES ---
+        const collectables = {
+            items: [],
+            types: [
+                { id: 'SHIELD', color: '#3498db', symbol: '🛡️', chance: 25 },
+                { id: 'STAR', color: '#f1c40f', symbol: '⭐', chance: 75 }
+            ],
 
-        init() { this.items = []; },
+            init() { this.items = []; },
 
-        update() {
-            // Tăng tốc độ và thu hẹp khoảng cách theo level
-            let levelMultiplier = 1 + (currentLevel * 0.05);
-            pipeSpeed = basePipeSpeed * levelMultiplier;
-            let currentPipeGap = pipeGap * Math.max(0.7, 1 - (currentLevel * 0.02));
-
-            if (this.items.length === 0 || 
-               (canvas.width - this.items[this.items.length - 1].x >= canvas.width * 0.55)) {
-                
-                let minHeight = canvas.height * 0.1;
-                let maxHeight = canvas.height - groundHeight - currentPipeGap - minHeight;
-                let topHeight = Math.random() * (maxHeight - minHeight) + minHeight;
+            spawn(x, y) {
+                let rand = Math.random() * 100;
+                let sum = 0, selectedType = this.types[0];
+                for (let t of this.types) {
+                    sum += t.chance;
+                    if (rand <= sum) { selectedType = t; break; }
+                }
 
                 this.items.push({
-                    x: canvas.width,
-                    topHeight: topHeight,
-                    passed: false,
-                    broken: false,
-                    gap: currentPipeGap
+                    x: x, y: y, type: selectedType, radius: canvas.height * 0.025, collected: false
                 });
+            },
 
-                // 40% sinh ra item
-                if (Math.random() < 0.4) {
-                    collectables.spawn(canvas.width + pipeWidth/2, topHeight + currentPipeGap/2);
+            update() {
+                for (let i = 0; i < this.items.length; i++) {
+                    let item = this.items[i];
+                    if (item.collected) continue;
+
+                    item.x -= pipeSpeed;
+
+                    let distToBird = Math.sqrt((bird.x - item.x) ** 2 + (bird.y - item.y) ** 2);
+                    if (distToBird < bird.radius + item.radius) {
+                        item.collected = true;
+                        this.applyEffect(item.type.id);
+                    }
+
+                    if (item.x + item.radius < 0) {
+                        this.items.splice(i, 1);
+                        i--;
+                    }
+                }
+            },
+
+            applyEffect(id) {
+                if (id === 'SHIELD') {
+                    if (effects.shieldCount < 3) effects.shieldCount++;
+                    updateEffectsUI();
+                } else if (id === 'STAR') {
+                    totalStars++;
+                    saveData();
+                }
+            },
+
+            draw() {
+                for (let item of this.items) {
+                    if (item.collected) continue;
+                    ctx.save();
+                    ctx.translate(item.x, item.y);
+                    let hover = Math.sin(frames * 0.1) * 5;
+
+                    ctx.beginPath();
+                    ctx.arc(0, hover, item.radius, 0, Math.PI * 2);
+                    ctx.fillStyle = item.type.color;
+                    ctx.fill();
+                    ctx.lineWidth = 2;
+                    ctx.strokeStyle = '#fff';
+                    ctx.stroke();
+
+                    ctx.fillStyle = '#fff';
+                    ctx.font = `${item.radius}px Arial`;
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    ctx.fillText(item.type.symbol, 0, hover + 2);
+                    ctx.restore();
                 }
             }
+        };
 
-            for (let i = 0; i < this.items.length; i++) {
-                let p = this.items[i];
-                p.x -= pipeSpeed;
+        // --- PIPES ---
+        const pipes = {
+            items: [],
 
-                if (p.x + pipeWidth < bird.x && !p.passed && !p.broken) {
-                    score++;
-                    levelScore++;
-                    ui.scoreBoard.innerText = score;
-                    p.passed = true;
-                    
-                    // Check qua màn
-                    if (levelScore >= PIPES_PER_LEVEL) {
-                        setLevelComplete();
+            init() { this.items = []; },
+
+            getRequiredPipesForLevel(lv) {
+                return 10 + (lv - 1) * 5; // Lv1: 10, Lv2: 15, Lv3: 20...
+            },
+
+            update() {
+                // Tăng tốc độ theo level
+                let speedMultiplier = 1 + ((currentLevel - 1) * 0.05);
+                pipeSpeed = basePipeSpeed * speedMultiplier;
+                let currentPipeGap = pipeGap * Math.max(0.7, 1 - ((currentLevel - 1) * 0.02));
+
+                let reqPipes = this.getRequiredPipesForLevel(currentLevel);
+
+                if (this.items.length === 0 ||
+                    (canvas.width - this.items[this.items.length - 1].x >= canvas.width * 0.55)) {
+
+                    let minHeight = canvas.height * 0.1;
+                    let maxHeight = canvas.height - groundHeight - currentPipeGap - minHeight;
+                    let topHeight = Math.random() * (maxHeight - minHeight) + minHeight;
+
+                    // Kiểm tra xem đây có phải là ống đích (Finish Pipe) không
+                    spawnedPipesCount++;
+                    let isFinishLine = (spawnedPipesCount === reqPipes);
+
+                    // Nếu ống vượt qua mức reqPipes (sau khi level up), reset logic ở hàm level up
+                    // Đảm bảo không sinh ống trong khoảng khắc chuyển level ngay lập tức
+                    if (spawnedPipesCount <= reqPipes) {
+                        this.items.push({
+                            x: canvas.width,
+                            topHeight: topHeight,
+                            passed: false,
+                            broken: false,
+                            gap: currentPipeGap,
+                            isFinishLine: isFinishLine
+                        });
+
+                        // Sinh item (Không sinh ở ống đích)
+                        if (!isFinishLine && Math.random() < 0.4) {
+                            collectables.spawn(canvas.width + pipeWidth / 2, topHeight + currentPipeGap / 2);
+                        }
                     }
                 }
 
-                if (p.x + pipeWidth < 0) {
-                    this.items.shift();
-                    i--; 
+                for (let i = 0; i < this.items.length; i++) {
+                    let p = this.items[i];
+                    p.x -= pipeSpeed;
+
+                    if (p.x + pipeWidth < bird.x && !p.passed && !p.broken) {
+                        score++;
+                        ui.scoreBoard.innerText = score;
+                        p.passed = true;
+
+                        // Xử lý khi bay qua ống đích
+                        if (p.isFinishLine) {
+                            doLevelUp();
+                        }
+                    }
+
+                    if (p.x + pipeWidth < 0) {
+                        this.items.shift();
+                        i--;
+                    }
+                }
+            },
+
+            draw() {
+                for (let p of this.items) {
+                    if (p.broken) continue;
+
+                    let bottomY = p.topHeight + p.gap;
+                    let bottomHeight = canvas.height - groundHeight - bottomY;
+
+                    // Chọn màu ống: Ống thường (Xanh lá), Ống đích (Vàng kim)
+                    ctx.fillStyle = p.isFinishLine ? '#f1c40f' : '#2ecc71';
+                    ctx.strokeStyle = p.isFinishLine ? '#d35400' : '#27ae60';
+                    ctx.lineWidth = 3;
+
+                    // Vẽ ống trên
+                    ctx.fillRect(p.x, 0, pipeWidth, p.topHeight);
+                    ctx.strokeRect(p.x, 0, pipeWidth, p.topHeight);
+                    ctx.fillRect(p.x - 5, p.topHeight - 20, pipeWidth + 10, 20);
+                    ctx.strokeRect(p.x - 5, p.topHeight - 20, pipeWidth + 10, 20);
+
+                    // Vẽ ống dưới
+                    ctx.fillRect(p.x, bottomY, pipeWidth, bottomHeight);
+                    ctx.strokeRect(p.x, bottomY, pipeWidth, bottomHeight);
+                    ctx.fillRect(p.x - 5, bottomY, pipeWidth + 10, 20);
+                    ctx.strokeRect(p.x - 5, bottomY, pipeWidth + 10, 20);
+
+                    // Vẽ cờ kẻ caro ở giữa ống đích
+                    if (p.isFinishLine) {
+                        let squareSize = pipeWidth / 3;
+                        for (let x = 0; x < 3; x++) {
+                            for (let y = 0; y < Math.floor(p.gap / squareSize); y++) {
+                                ctx.fillStyle = (x + y) % 2 === 0 ? 'rgba(0,0,0,0.5)' : 'rgba(255,255,255,0.5)';
+                                ctx.fillRect(p.x + x * squareSize, p.topHeight + y * squareSize, squareSize, squareSize);
+                            }
+                        }
+
+                        // Vẽ chữ FINISH
+                        ctx.save();
+                        ctx.translate(p.x + pipeWidth / 2, p.topHeight - 30);
+                        ctx.fillStyle = 'white';
+                        ctx.font = 'bold 20px Arial';
+                        ctx.textAlign = 'center';
+                        ctx.lineWidth = 3;
+                        ctx.strokeStyle = 'black';
+                        ctx.strokeText("FINISH", 0, 0);
+                        ctx.fillText("FINISH", 0, 0);
+                        ctx.restore();
+                    }
                 }
             }
-        },
+        };
 
-        draw() {
-            for (let p of this.items) {
-                if (p.broken) continue; 
+        function doLevelUp() {
+            currentLevel++;
+            spawnedPipesCount = 0; // Reset đếm số lượng ống cho level mới
+
+            // Thưởng Ngôi sao khi qua màn (10 sao * Level)
+            totalStars += currentLevel * 10;
+            saveData();
+
+            // Thay đổi nền
+            container.style.backgroundColor = BG_COLORS[(currentLevel - 1) % BG_COLORS.length];
+
+            // Cập nhật UI
+            ui.levelDisplay.innerText = `Lv: ${currentLevel}`;
+            ui.starDisplay.innerText = `⭐ ${totalStars}`;
+
+            // Tạo hiệu ứng nhá sáng
+            ctx.fillStyle = 'white';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+        }
+
+        // --- GROUND ---
+        const ground = {
+            x: 0,
+            draw() {
+                if (currentState === GAME_STATE.PLAYING && pipeSpeed > 0) {
+                    this.x -= pipeSpeed;
+                    if (this.x <= -canvas.width) this.x = 0;
+                }
+
+                ctx.fillStyle = '#ded895';
+                ctx.fillRect(0, canvas.height - groundHeight, canvas.width, groundHeight);
+                ctx.fillStyle = '#73bf2e';
+                ctx.fillRect(0, canvas.height - groundHeight, canvas.width, 15);
+                ctx.strokeStyle = '#543847';
+                ctx.lineWidth = 2;
+
+                ctx.save();
+                ctx.beginPath();
+                for (let i = this.x; i < canvas.width; i += 30) {
+                    ctx.moveTo(i, canvas.height - groundHeight);
+                    ctx.lineTo(i - 15, canvas.height - groundHeight + 15);
+                }
+                ctx.stroke();
+                ctx.restore();
+                ctx.strokeRect(0, canvas.height - groundHeight, canvas.width, 15);
+            }
+        };
+
+        // --- LOGIC ---
+        function checkCollision() {
+            if (bird.y + bird.radius >= canvas.height - groundHeight) return true; // Chết luôn
+
+            if (bird.y - bird.radius <= 0) {
+                bird.y = bird.radius;
+                bird.velocity = 0;
+            }
+
+            if (effects.invincibleTimer > 0) return false;
+
+            for (let p of pipes.items) {
+                if (p.broken) continue;
+
+                let cx = Math.max(p.x, Math.min(bird.x, p.x + pipeWidth));
+
+                let cyTop = Math.max(0, Math.min(bird.y, p.topHeight));
+                let distTop = Math.sqrt((bird.x - cx) ** 2 + (bird.y - cyTop) ** 2);
+                if (distTop < bird.radius) return handlePipeDamage(p);
 
                 let bottomY = p.topHeight + p.gap;
-                let bottomHeight = canvas.height - groundHeight - bottomY;
-
-                // Màu ống thay đổi theo level
-                ctx.fillStyle = currentLevel % 2 === 0 ? '#e67e22' : '#2ecc71';
-                ctx.strokeStyle = currentLevel % 2 === 0 ? '#d35400' : '#27ae60';
-                ctx.lineWidth = 3;
-
-                ctx.fillRect(p.x, 0, pipeWidth, p.topHeight);
-                ctx.strokeRect(p.x, 0, pipeWidth, p.topHeight);
-                ctx.fillRect(p.x - 5, p.topHeight - 20, pipeWidth + 10, 20);
-                ctx.strokeRect(p.x - 5, p.topHeight - 20, pipeWidth + 10, 20);
-
-                ctx.fillRect(p.x, bottomY, pipeWidth, bottomHeight);
-                ctx.strokeRect(p.x, bottomY, pipeWidth, bottomHeight);
-                ctx.fillRect(p.x - 5, bottomY, pipeWidth + 10, 20);
-                ctx.strokeRect(p.x - 5, bottomY, pipeWidth + 10, 20);
+                let cyBottom = Math.max(bottomY, Math.min(bird.y, canvas.height - groundHeight));
+                let distBottom = Math.sqrt((bird.x - cx) ** 2 + (bird.y - cyBottom) ** 2);
+                if (distBottom < bird.radius) return handlePipeDamage(p);
             }
-        }
-    };
-
-    // --- GROUND ---
-    const ground = {
-        x: 0,
-        draw() {
-            if (currentState === GAME_STATE.PLAYING && pipeSpeed > 0) {
-                this.x -= pipeSpeed;
-                if (this.x <= -canvas.width) this.x = 0;
-            }
-
-            ctx.fillStyle = '#ded895';
-            ctx.fillRect(0, canvas.height - groundHeight, canvas.width, groundHeight);
-            ctx.fillStyle = '#73bf2e';
-            ctx.fillRect(0, canvas.height - groundHeight, canvas.width, 15);
-            ctx.strokeStyle = '#543847';
-            ctx.lineWidth = 2;
-            
-            ctx.save();
-            ctx.beginPath();
-            for(let i = this.x; i < canvas.width; i += 30) {
-                ctx.moveTo(i, canvas.height - groundHeight);
-                ctx.lineTo(i - 15, canvas.height - groundHeight + 15);
-            }
-            ctx.stroke();
-            ctx.restore();
-            ctx.strokeRect(0, canvas.height - groundHeight, canvas.width, 15);
-        }
-    };
-
-    // --- LOGIC ---
-    function checkCollision() {
-        if (bird.y + bird.radius >= canvas.height - groundHeight) return true; // Chết luôn
-        
-        if (bird.y - bird.radius <= 0) {
-            bird.y = bird.radius; 
-            bird.velocity = 0;
-        }
-
-        if (effects.invincibleTimer > 0) return false;
-
-        for (let p of pipes.items) {
-            if (p.broken) continue;
-
-            let cx = Math.max(p.x, Math.min(bird.x, p.x + pipeWidth));
-            
-            let cyTop = Math.max(0, Math.min(bird.y, p.topHeight));
-            let distTop = Math.sqrt((bird.x - cx) ** 2 + (bird.y - cyTop) ** 2);
-            if (distTop < bird.radius) return handlePipeDamage(p);
-
-            let bottomY = p.topHeight + p.gap;
-            let cyBottom = Math.max(bottomY, Math.min(bird.y, canvas.height - groundHeight));
-            let distBottom = Math.sqrt((bird.x - cx) ** 2 + (bird.y - cyBottom) ** 2);
-            if (distBottom < bird.radius) return handlePipeDamage(p);
-        }
-        return false;
-    }
-
-    function handlePipeDamage(pipeHit) {
-        if (effects.shieldCount > 0) {
-            effects.shieldCount--;
-            effects.invincibleTimer = FPS * 2; 
-            pipeHit.broken = true; 
-            updateEffectsUI();
             return false;
         }
-        return true; 
-    }
 
-    function changeBackground() {
-        container.style.backgroundColor = BG_COLORS[(currentLevel - 1) % BG_COLORS.length];
-    }
+        function handlePipeDamage(pipeHit) {
+            if (effects.shieldCount > 0) {
+                effects.shieldCount--;
+                effects.invincibleTimer = FPS * 2;
+                pipeHit.broken = true;
+                updateEffectsUI();
+                return false;
+            }
+            return true;
+        }
 
-    // --- GAME STATES TRASITIONS ---
-    function initGame(fullReset = false) {
-        resizeCanvas();
-        bird.init();
-        pipes.init();
-        collectables.init();
-        
-        if (fullReset) {
+        // --- GAME STATES TRASITIONS ---
+        function initGame() {
+            resizeCanvas();
+            bird.init();
+            pipes.init();
+            collectables.init();
+
             score = 0;
             currentLevel = 1;
-        }
-        levelScore = 0;
-        
-        ui.scoreBoard.innerText = score;
-        frames = 0;
-        lastTimestamp = performance.now();
-        effects = { shieldCount: 0, invincibleTimer: 0 };
-        
-        updateTopBar();
-        updateEffectsUI();
-        changeBackground();
-        ui.scoreBoard.classList.add('hidden');
-    }
+            spawnedPipesCount = 0;
 
-    function startGame() {
-        currentState = GAME_STATE.PLAYING;
-        showScreen(null);
-        ui.scoreBoard.classList.remove('hidden');
-        bird.flap();
-    }
+            ui.scoreBoard.innerText = score;
+            frames = 0;
+            lastTimestamp = performance.now();
+            effects = { shieldCount: 0, invincibleTimer: 0 };
 
-    function setGameOver() {
-        currentState = GAME_STATE.GAMEOVER;
-        ui.scoreBoard.classList.add('hidden');
-        ui.effectsBoard.innerHTML = '';
-        showScreen('gameOver');
-        
-        if (score > bestScore) {
-            bestScore = score;
-            saveData();
+            updateTopBar();
+            updateEffectsUI();
+            container.style.backgroundColor = BG_COLORS[0];
+            ui.scoreBoard.classList.add('hidden');
         }
 
-        document.getElementById('final-score').innerText = score;
-        document.getElementById('best-score').innerText = bestScore;
-    }
+        function startGame() {
+            currentState = GAME_STATE.PLAYING;
+            showScreen(null);
+            ui.scoreBoard.classList.remove('hidden');
+            bird.flap();
+        }
 
-    function setLevelComplete() {
-        currentState = GAME_STATE.LEVEL_COMPLETE;
-        ui.scoreBoard.classList.add('hidden');
-        showScreen('levelComplete');
-        
-        let bonus = currentLevel * 10;
-        totalCoins += bonus;
-        saveData();
-
-        document.getElementById('lc-level').innerText = currentLevel;
-        document.getElementById('lc-bonus').innerText = bonus;
-        currentLevel++;
-    }
-
-    // --- SHOP ---
-    function openShop() {
-        previousState = currentState;
-        currentState = GAME_STATE.SHOP;
-        showScreen('shop');
-        renderShop();
-    }
-
-    function closeShop() {
-        bird.updateSkinColor();
-        if (previousState === GAME_STATE.READY) {
-            currentState = GAME_STATE.READY;
-            showScreen('start');
-        } else if (previousState === GAME_STATE.LEVEL_COMPLETE) {
-            currentState = GAME_STATE.LEVEL_COMPLETE;
-            showScreen('levelComplete');
-        } else if (previousState === GAME_STATE.GAMEOVER) {
+        function setGameOver() {
             currentState = GAME_STATE.GAMEOVER;
+            ui.scoreBoard.classList.add('hidden');
+            ui.effectsBoard.innerHTML = '';
             showScreen('gameOver');
-        }
-    }
 
-    function renderShop() {
-        ui.shopCoins.innerText = totalCoins;
-        ui.shopList.innerHTML = '';
-
-        SKINS.forEach(skin => {
-            let isOwned = ownedSkins.includes(skin.id);
-            let isSelected = currentSkinId === skin.id;
-            
-            let btnHtml = '';
-            if (isSelected) {
-                btnHtml = `<button class="shop-btn btn-selected">Đang Dùng</button>`;
-            } else if (isOwned) {
-                btnHtml = `<button class="shop-btn btn-select" onclick="selectSkin('${skin.id}')">Chọn</button>`;
-            } else {
-                btnHtml = `<button class="shop-btn btn-buy" onclick="buySkin('${skin.id}', ${skin.price})">${skin.price} 🪙</button>`;
+            if (score > bestScore) {
+                bestScore = score;
+                saveData();
             }
 
-            ui.shopList.innerHTML += `
+            document.getElementById('final-score').innerText = score;
+            document.getElementById('best-score').innerText = bestScore;
+        }
+
+        // --- SHOP ---
+        function openShop() {
+            previousState = currentState;
+            currentState = GAME_STATE.SHOP;
+            showScreen('shop');
+            renderShop();
+        }
+
+        function closeShop() {
+            bird.updateSkinColor();
+            if (previousState === GAME_STATE.READY) {
+                currentState = GAME_STATE.READY;
+                showScreen('start');
+            } else if (previousState === GAME_STATE.GAMEOVER) {
+                currentState = GAME_STATE.GAMEOVER;
+                showScreen('gameOver');
+            }
+        }
+
+        function renderShop() {
+            ui.shopStars.innerText = totalStars;
+            ui.shopList.innerHTML = '';
+
+            SKINS.forEach(skin => {
+                let isOwned = ownedSkins.includes(skin.id);
+                let isSelected = currentSkinId === skin.id;
+
+                let btnHtml = '';
+                if (isSelected) {
+                    btnHtml = `<button class="shop-btn btn-selected">Đang Dùng</button>`;
+                } else if (isOwned) {
+                    btnHtml = `<button class="shop-btn btn-select" onclick="selectSkin('${skin.id}')">Chọn</button>`;
+                } else {
+                    btnHtml = `<button class="shop-btn btn-buy" onclick="buySkin('${skin.id}', ${skin.price})">${skin.price} ⭐</button>`;
+                }
+
+                ui.shopList.innerHTML += `
                 <div class="shop-item">
                     <div class="skin-preview" style="background-color: ${skin.color}"></div>
                     <strong style="margin-bottom:5px; font-size:14px;">${skin.name}</strong>
                     ${btnHtml}
                 </div>
             `;
-        });
-    }
+            });
+        }
 
-    window.buySkin = function(id, price) {
-        if (totalCoins >= price) {
-            totalCoins -= price;
-            ownedSkins.push(id);
+        window.buySkin = function (id, price) {
+            if (totalStars >= price) {
+                totalStars -= price;
+                ownedSkins.push(id);
+                currentSkinId = id;
+                saveData();
+                renderShop();
+            } else {
+                alert("Không đủ Ngôi Sao!");
+            }
+        }
+
+        window.selectSkin = function (id) {
             currentSkinId = id;
             saveData();
             renderShop();
-        } else {
-            alert("Không đủ Coin!");
         }
-    }
 
-    window.selectSkin = function(id) {
-        currentSkinId = id;
-        saveData();
-        renderShop();
-    }
+        // --- LOOP & INPUT ---
+        function loop(timestamp) {
+            requestAnimationFrame(loop);
+            if (!timestamp) timestamp = performance.now();
+            let deltaTime = timestamp - lastTimestamp;
 
-    // --- LOOP & INPUT ---
-    function loop(timestamp) {
-        requestAnimationFrame(loop);
-        if (!timestamp) timestamp = performance.now();
-        let deltaTime = timestamp - lastTimestamp;
+            if (deltaTime >= frameInterval) {
+                lastTimestamp = timestamp - (deltaTime % frameInterval);
 
-        if (deltaTime >= frameInterval) {
-            lastTimestamp = timestamp - (deltaTime % frameInterval);
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-            // Xóa canvas, background dùng css transition
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
+                if (currentState === GAME_STATE.READY) {
+                    ground.draw();
+                    bird.draw();
+                }
+                else if (currentState === GAME_STATE.PLAYING) {
+                    if (effects.invincibleTimer > 0) effects.invincibleTimer--;
+
+                    pipes.update();
+                    pipes.draw();
+
+                    collectables.update();
+                    collectables.draw();
+
+                    ground.draw();
+
+                    bird.update();
+                    bird.draw();
+
+                    if (checkCollision()) {
+                        setGameOver();
+                    }
+                }
+                else if (currentState === GAME_STATE.GAMEOVER) {
+                    pipes.draw();
+                    collectables.draw();
+                    ground.draw();
+                    bird.draw();
+                }
+
+                frames++;
+            }
+        }
+
+        function handleInput(e) {
+            if (currentState === GAME_STATE.SHOP) return;
+
+            if (e.type === 'keydown' && e.code !== 'Space') return;
+            if (e.cancelable && e.type !== 'mousedown') e.preventDefault();
 
             if (currentState === GAME_STATE.READY) {
-                ground.draw();
-                bird.draw();
-            } 
-            else if (currentState === GAME_STATE.PLAYING) {
-                if (effects.invincibleTimer > 0) effects.invincibleTimer--;
-                
-                pipes.update();
-                pipes.draw();
-                
-                collectables.update();
-                collectables.draw();
-
-                ground.draw();
-                
-                bird.update();
-                bird.draw();
-
-                if (checkCollision()) {
-                    setGameOver();
-                }
-            } 
-            else if (currentState === GAME_STATE.GAMEOVER || currentState === GAME_STATE.LEVEL_COMPLETE) {
-                pipes.draw();
-                collectables.draw();
-                ground.draw();
-                bird.draw(); 
+                startGame();
+            } else if (currentState === GAME_STATE.PLAYING) {
+                bird.flap();
             }
-            // Trạng thái SHOP không cần update logic game
-
-            frames++;
         }
-    }
 
-    function handleInput(e) {
-        if (currentState === GAME_STATE.SHOP || currentState === GAME_STATE.LEVEL_COMPLETE || currentState === GAME_STATE.GAMEOVER) return;
-        
-        if (e.type === 'keydown' && e.code !== 'Space') return;
-        if (e.cancelable && e.type !== 'mousedown') e.preventDefault();
+        // Events
+        window.addEventListener('keydown', handleInput);
+        canvas.addEventListener('mousedown', handleInput);
+        canvas.addEventListener('touchstart', handleInput, { passive: false });
 
-        if (currentState === GAME_STATE.READY) {
-            startGame();
-        } else if (currentState === GAME_STATE.PLAYING) {
-            bird.flap();
-        }
-    }
+        document.getElementById('btn-start').addEventListener('click', startGame);
+        document.getElementById('btn-restart').addEventListener('click', () => { initGame(); startGame(); });
 
-    // Events
-    window.addEventListener('keydown', handleInput);
-    canvas.addEventListener('mousedown', handleInput);
-    canvas.addEventListener('touchstart', handleInput, { passive: false });
+        document.getElementById('btn-shop-start').addEventListener('click', openShop);
+        document.getElementById('btn-shop-over').addEventListener('click', openShop);
+        document.getElementById('btn-close-shop').addEventListener('click', closeShop);
 
-    document.getElementById('btn-start').addEventListener('click', startGame);
-    document.getElementById('btn-restart').addEventListener('click', () => { initGame(true); startGame(); });
-    document.getElementById('btn-next-level').addEventListener('click', () => { initGame(false); startGame(); });
-    
-    // Nút Shop
-    document.getElementById('btn-shop-start').addEventListener('click', openShop);
-    document.getElementById('btn-shop-over').addEventListener('click', openShop);
-    document.getElementById('btn-shop-next').addEventListener('click', openShop);
-    document.getElementById('btn-close-shop').addEventListener('click', closeShop);
-
-    // Boot
-    updateTopBar();
-    initGame(true);
-    requestAnimationFrame(loop);
-</script>
+        // Boot
+        updateTopBar();
+        initGame();
+        requestAnimationFrame(loop);
+    </script>
 </body>
+
 </html>
