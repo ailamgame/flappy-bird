@@ -222,6 +222,8 @@
     };
 
     const FPS = 60; 
+    const frameInterval = 1000 / FPS;
+    let lastTimestamp = 0;
 
     function resizeCanvas() {
         canvas.width = container.clientWidth;
@@ -387,7 +389,7 @@
             if (id === 'SHIELD') {
                 effects.shield = true;
             } else if (id === 'SLOW') {
-                effects.slowTimer = 8 * FPS; // Tăng lên 8 giây
+                effects.slowTimer = 8 * FPS;
             }
             updateEffectsUI();
         },
@@ -551,7 +553,7 @@
     function handleDamage(pipeHit = null) {
         if (effects.shield) {
             effects.shield = false;
-            effects.invincibleTimer = FPS * 3; // Tăng thời gian bất tử lên 3 giây sau khi vỡ khiên
+            effects.invincibleTimer = FPS * 3; 
             if (pipeHit) pipeHit.broken = true; 
             updateEffectsUI();
             return false;
@@ -580,6 +582,7 @@
         score = 0;
         scoreBoard.innerText = score;
         frames = 0;
+        lastTimestamp = performance.now();
         
         effects = { shield: false, invincibleTimer: 0, slowTimer: 0 };
         updateEffectsUI();
@@ -600,41 +603,50 @@
         bestScoreEl.innerText = bestScore;
     }
 
-    function loop() {
-        ctx.fillStyle = '#70c5ce';
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-        if (currentState === GAME_STATE.READY) {
-            ground.draw();
-            bird.draw();
-        } 
-        else if (currentState === GAME_STATE.PLAYING) {
-            updateEffectsTimers();
-            
-            pipes.update();
-            pipes.draw();
-            
-            collectables.update();
-            collectables.draw();
-
-            ground.draw();
-            
-            bird.update();
-            bird.draw();
-
-            if (checkCollision()) {
-                setGameOver();
-            }
-        } 
-        else if (currentState === GAME_STATE.GAMEOVER) {
-            pipes.draw();
-            collectables.draw();
-            ground.draw();
-            bird.draw(); 
-        }
-
-        frames++;
+    // Fixed Time Step Loop để đồng bộ tốc độ trên màn hình 60Hz, 90Hz, 120Hz+
+    function loop(timestamp) {
         requestAnimationFrame(loop);
+
+        if (!timestamp) timestamp = performance.now();
+        let deltaTime = timestamp - lastTimestamp;
+
+        if (deltaTime >= frameInterval) {
+            lastTimestamp = timestamp - (deltaTime % frameInterval);
+
+            ctx.fillStyle = '#70c5ce';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            if (currentState === GAME_STATE.READY) {
+                ground.draw();
+                bird.draw();
+            } 
+            else if (currentState === GAME_STATE.PLAYING) {
+                updateEffectsTimers();
+                
+                pipes.update();
+                pipes.draw();
+                
+                collectables.update();
+                collectables.draw();
+
+                ground.draw();
+                
+                bird.update();
+                bird.draw();
+
+                if (checkCollision()) {
+                    setGameOver();
+                }
+            } 
+            else if (currentState === GAME_STATE.GAMEOVER) {
+                pipes.draw();
+                collectables.draw();
+                ground.draw();
+                bird.draw(); 
+            }
+
+            frames++;
+        }
     }
 
     function handleInput(e) {
@@ -672,7 +684,7 @@
     });
 
     initGame();
-    loop();
+    requestAnimationFrame(loop);
 </script>
 </body>
 </html>
