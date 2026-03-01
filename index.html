@@ -182,23 +182,10 @@
             box-shadow: 0 0 0 #d35400;
         }
 
-        .btn-blue {
-            background: #3498db;
-            box-shadow: 0 4px 0 #2980b9;
-        }
-
-        .btn-blue:active {
-            box-shadow: 0 0 0 #2980b9;
-        }
-
-        .btn-green {
-            background: #2ecc71;
-            box-shadow: 0 4px 0 #27ae60;
-        }
-
-        .btn-green:active {
-            box-shadow: 0 0 0 #27ae60;
-        }
+        .btn-blue { background: #3498db; box-shadow: 0 4px 0 #2980b9; }
+        .btn-blue:active { box-shadow: 0 0 0 #2980b9; }
+        .btn-green { background: #2ecc71; box-shadow: 0 4px 0 #27ae60; }
+        .btn-green:active { box-shadow: 0 0 0 #27ae60; }
 
         /* Shop UI */
         .shop-items {
@@ -239,22 +226,9 @@
             width: 100%;
         }
 
-        .btn-buy {
-            background: #f1c40f;
-            color: #000;
-            box-shadow: 0 3px 0 #f39c12;
-        }
-
-        .btn-select {
-            background: #3498db;
-            box-shadow: 0 3px 0 #2980b9;
-        }
-
-        .btn-selected {
-            background: #2ecc71;
-            box-shadow: 0 3px 0 #27ae60;
-            cursor: default;
-        }
+        .btn-buy { background: #f1c40f; color: #000; box-shadow: 0 3px 0 #f39c12; }
+        .btn-select { background: #3498db; box-shadow: 0 3px 0 #2980b9; }
+        .btn-selected { background: #2ecc71; box-shadow: 0 3px 0 #27ae60; cursor: default;}
     </style>
 </head>
 
@@ -350,8 +324,8 @@
         // Data Storage
         let bestScore = parseInt(localStorage.getItem('flappyStarsBest')) || 0;
         let totalStars = parseInt(localStorage.getItem('flappyTotalStars')) || 0;
-        let ownedSkins = JSON.parse(localStorage.getItem('flappySkins')) || ['yellow'];
-        let currentSkinId = localStorage.getItem('flappyCurrentSkin') || 'yellow';
+        let ownedSkins = JSON.parse(localStorage.getItem('flappySkins')) || ['pink'];
+        let currentSkinId = localStorage.getItem('flappyCurrentSkin') || 'pink';
 
         // Skins Data
         const SKINS = [
@@ -363,14 +337,15 @@
             { id: 'black', name: 'Ninja', color: '#2c3e50', price: 9999 },
         ];
 
-        // Backgrounds theo level
+        // Backgrounds theo cấp độ
         const BG_COLORS = ['#70c5ce', '#1abc9c', '#3498db', '#9b59b6', '#d35400', '#2c3e50'];
 
         // Physics
         let baseGravity = 0, baseJumpForce = 0, basePipeSpeed = 0;
         let pipeSpeed = 0, pipeGap = 0, pipeWidth = 0, groundHeight = 0;
 
-        let effects = { shieldCount: 0, invincibleTimer: 0 };
+        // Effects state (Thêm flashTimer để làm hiệu ứng nháy sáng màn hình)
+        let effects = { shieldCount: 0, invincibleTimer: 0, flashTimer: 0 };
 
         const FPS = 60;
         const frameInterval = 1000 / FPS;
@@ -467,7 +442,7 @@
                     ctx.globalAlpha = 0.5;
                 }
 
-                // --- 1. Vẽ thân chim ---
+                // 1. Vẽ thân chim
                 ctx.beginPath();
                 ctx.arc(0, 0, this.radius, 0, Math.PI * 2);
                 ctx.fillStyle = this.color;
@@ -476,20 +451,18 @@
                 ctx.strokeStyle = '#000';
                 ctx.stroke();
 
-                // --- 2. Vẽ Mắt chim ---
-                // Tròng trắng
+                // 2. Vẽ Mắt chim
                 ctx.beginPath();
                 ctx.arc(this.radius / 2, -this.radius / 4, this.radius / 3, 0, Math.PI * 2);
                 ctx.fillStyle = '#fff';
                 ctx.fill();
-                // Tròng đen
                 ctx.beginPath();
                 let pupilOffsetX = currentSkinId === 'red' ? 2 : 1;
                 ctx.arc(this.radius / 2 + pupilOffsetX, -this.radius / 4, this.radius / 6, 0, Math.PI * 2);
                 ctx.fillStyle = '#000';
                 ctx.fill();
 
-                // --- 3. Vẽ Mỏ chim ---
+                // 3. Vẽ Mỏ chim
                 ctx.beginPath();
                 ctx.moveTo(this.radius * 0.8, 0);
                 ctx.lineTo(this.radius * 1.6, 0);
@@ -498,7 +471,7 @@
                 ctx.fill();
                 ctx.stroke();
 
-                // --- 4. VẼ PHỤ KIỆN THEO TỪNG SKIN ---
+                // 4. VẼ PHỤ KIỆN THEO TỪNG SKIN
                 if (currentSkinId === 'yellow') {
                     // Gà Vàng: Thêm mào gà đỏ
                     ctx.fillStyle = '#e74c3c';
@@ -565,7 +538,7 @@
                     ctx.stroke();
                 }
 
-                // --- 5. Vẽ Khiên bảo vệ ---
+                // 5. Vẽ Khiên bảo vệ
                 if (effects.shieldCount > 0) {
                     ctx.beginPath();
                     ctx.arc(0, 0, this.radius * 1.6, 0, Math.PI * 2);
@@ -706,12 +679,17 @@
                     let p = this.items[i];
                     p.x -= pipeSpeed;
 
-                    if (p.x + pipeWidth < bird.x && !p.passed && !p.broken) {
-                        score++;
-                        ui.scoreBoard.innerText = score;
+                    // KIỂM TRA ĐÃ BAY QUA ỐNG (Không phụ thuộc vào việc ống bị vỡ hay không)
+                    if (p.x + pipeWidth < bird.x && !p.passed) {
                         p.passed = true;
 
-                        // Xử lý khi bay qua ống đích
+                        // Nếu ống KHÔNG bị đâm vỡ thì mới cộng điểm
+                        if (!p.broken) {
+                            score++;
+                            ui.scoreBoard.innerText = score;
+                        }
+
+                        // Xử lý khi bay qua ống đích (kể cả khi đâm vỡ bằng khiên vẫn tính qua màn)
                         if (p.isFinishLine) {
                             doLevelUp();
                         }
@@ -789,9 +767,8 @@
             ui.levelDisplay.innerText = `Cấp: ${currentLevel}`;
             ui.starDisplay.innerText = `⭐ ${totalStars}`;
 
-            // Tạo hiệu ứng nhá sáng
-            ctx.fillStyle = 'white';
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            // Tạo hiệu ứng nhá sáng 15 frames
+            effects.flashTimer = 15;
         }
 
         // --- GROUND ---
@@ -875,7 +852,7 @@
             ui.scoreBoard.innerText = score;
             frames = 0;
             lastTimestamp = performance.now();
-            effects = { shieldCount: 0, invincibleTimer: 0 };
+            effects = { shieldCount: 0, invincibleTimer: 0, flashTimer: 0 };
 
             updateTopBar();
             updateEffectsUI();
@@ -959,7 +936,7 @@
                 saveData();
                 renderShop();
             } else {
-                alert("Không đủ Ngôi Sao!");
+                alert("Bạn không đủ Ngôi Sao!");
             }
         }
 
@@ -997,6 +974,13 @@
 
                     bird.update();
                     bird.draw();
+
+                    // Xử lý vẽ flash khi qua màn
+                    if (effects.flashTimer > 0) {
+                        ctx.fillStyle = `rgba(255, 255, 255, ${effects.flashTimer / 15})`;
+                        ctx.fillRect(0, 0, canvas.width, canvas.height);
+                        effects.flashTimer--;
+                    }
 
                     if (checkCollision()) {
                         setGameOver();
