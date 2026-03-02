@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="vi">
+<html lang="en">
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
@@ -12,8 +12,8 @@
         canvas { display:block; width:100%; height:100%; }
         .ui-layer { position:absolute; top:0; left:0; width:100%; height:100%; display:flex; flex-direction:column; justify-content:center; align-items:center; pointer-events:none; z-index:10; background:rgba(0,0,0,0.4); }
         .hidden { display:none !important; }
-        #top-bar { position:absolute; top:5%; width:100%; display:flex; justify-content:space-between; padding:0 20px; z-index:20; pointer-events:none; align-items:center; }
-        .stats-text { font-size:24px; font-weight:bold; color:white; -webkit-text-stroke:1px black; text-shadow:2px 2px 0 #000; }
+        #top-bar { position:absolute; top:5%; width:100%; display:flex; justify-content:space-between; padding:0 12px; z-index:20; pointer-events:none; align-items:center; }
+        .stats-text { font-size:18px; font-weight:bold; color:white; -webkit-text-stroke:1px black; text-shadow:2px 2px 0 #000; }
         #score-board { position:absolute; top:15%; left:50%; transform:translateX(-50%); font-size:50px; font-weight:bold; color:white; -webkit-text-stroke:2px black; text-shadow:3px 3px 0 #000; z-index:15; pointer-events:none; }
         #effects-board { position:absolute; top:5%; left:50%; transform:translateX(-50%); display:flex; flex-direction:column; align-items:center; gap:10px; z-index:15; pointer-events:none; }
         .effect-badge { background:rgba(0,0,0,0.5); color:white; padding:5px 10px; border-radius:15px; font-size:14px; font-weight:bold; display:flex; align-items:center; gap:5px; }
@@ -33,8 +33,16 @@
         .btn-buy { background:#f1c40f; color:#000; box-shadow:0 3px 0 #f39c12; }
         .btn-select { background:#3498db; box-shadow:0 3px 0 #2980b9; }
         .btn-selected { background:#2ecc71; box-shadow:0 3px 0 #27ae60; cursor:default;}
-        /* nút âm thanh */
-        #sound-toggle { pointer-events:auto; background:rgba(0,0,0,0.35); color:white; border-radius:8px; padding:6px 8px; font-weight:bold; font-size:14px; border:2px solid rgba(255,255,255,0.12); cursor:pointer; display:flex; gap:6px; align-items:center; }
+        /* nút âm thanh / ngôn ngữ */
+        .top-controls { display:flex; gap:8px; align-items:center; pointer-events:auto; }
+        #sound-toggle { background:rgba(0,0,0,0.35); color:white; border-radius:8px; padding:6px 8px; font-weight:bold; font-size:14px; border:2px solid rgba(255,255,255,0.12); cursor:pointer; display:flex; gap:6px; align-items:center; pointer-events:auto; }
+        /* đặt nút ngôn ngữ trong panel, nằm dưới 2 nút */
+        .lang-row { margin-top:12px; display:flex; justify-content:center; width:100%; }
+        #lang-toggle { width:100%; max-width:260px; background:#14842f; color:white; border-radius:8px; padding:10px 12px; font-weight:bold; font-size:16px; border:3px solid #fff; cursor:pointer; box-shadow:0 4px 0 #005824; }
+        @media (max-width:420px) {
+            .btn { font-size:16px; padding:9px 14px; }
+            #lang-toggle { font-size:14px; padding:8px 10px; }
+        }
     </style>
 </head>
 <body>
@@ -42,10 +50,12 @@
         <canvas id="gameCanvas"></canvas>
 
         <div id="top-bar">
-            <div class="stats-text" id="level-display">Cấp: 1</div>
+            <div class="stats-text" id="level-display">Level: 1</div>
             <div style="display:flex; gap:10px; align-items:center;">
                 <div class="stats-text" id="star-display">⭐ 0</div>
-                <button id="sound-toggle" title="Bật/Tắt âm" aria-label="toggle-sound">🔊 BẬT</button>
+                <div class="top-controls">
+                    <button id="sound-toggle" title="Toggle sound" aria-label="toggle-sound">🔊 ON</button>
+                </div>
             </div>
         </div>
 
@@ -54,46 +64,186 @@
 
         <div id="start-screen" class="ui-layer">
             <div class="panel">
-                <h1>Flappy Sao</h1>
-                <p>Vượt ống để qua màn!</p>
-                <div style="font-size:12px; text-align:left; margin-bottom:15px; line-height:1.5;">
-                    🛡️ <b>Khiên:</b> Chống 1 lần đâm ống (Tối đa 3)<br>
-                    ⭐ <b>Ngôi Sao:</b> Thu thập để mua Trang phục<br>
-                    🏁 <b>Đích:</b> Ống vàng + vạch caro đen trắng<br>
-                    ⚠️ <b>Chú ý:</b> Chạm đất sẽ CHẾT LUÔN!
+                <h1 id="start-title">Flappy Star</h1>
+                <p id="start-desc">Fly through the pipes!</p>
+                <div id="start-info" style="font-size:12px; text-align:left; margin-bottom:15px; line-height:1.5;">
+                    🛡️ <b id="info-shield">Shield:</b> Blocks 1 pipe hit (Max 3)<br>
+                    ⭐ <b id="info-star">Star:</b> Collect to buy skins<br>
+                    🏁 <b id="info-finish">Finish:</b> Gold pipe + checkered line<br>
+                    ⚠️ <b id="info-note">Note:</b> Touching ground = instant death!
                 </div>
-                <div class="btn-container">
-                    <button class="btn btn-blue" id="btn-shop-start">Cửa Hàng</button>
-                    <button class="btn" id="btn-start">Bắt Đầu</button>
+                <div class="btn-container" id="main-buttons">
+                    <button class="btn btn-blue" id="btn-shop-start">Shop</button>
+                    <button class="btn" id="btn-start">Start</button>
+                </div>
+
+                <!-- → Nút ngôn ngữ nằm dưới 2 nút trên, căn giữa -->
+                <div class="lang-row">
+                    <button id="lang-toggle" aria-label="toggle-language">EN</button>
                 </div>
             </div>
         </div>
 
         <div id="shop-screen" class="ui-layer hidden">
             <div class="panel">
-                <h1>Trang Phục</h1>
-                <p>Đang có: <span id="shop-stars">0</span> ⭐</p>
+                <h1 id="shop-title">Skins</h1>
+                <p id="shop-desc">You have: <span id="shop-stars">0</span> ⭐</p>
                 <div class="shop-items" id="shop-list"></div>
-                <button class="btn" id="btn-close-shop" style="width:100%">Đóng</button>
+                <button class="btn" id="btn-close-shop" style="width:100%">Close</button>
             </div>
         </div>
 
         <div id="game-over-screen" class="ui-layer hidden">
             <div class="panel">
-                <h1>Kết Thúc</h1>
+                <h1 id="gameover-title">Game Over</h1>
                 <div class="score-box">
-                    <div>Điểm: <br><b id="final-score" style="font-size:24px;">0</b></div>
-                    <div>Kỷ Lục: <br><b id="best-score" style="font-size:24px;">0</b></div>
+                    <div id="score-label">Score: <br><b id="final-score" style="font-size:24px;">0</b></div>
+                    <div id="best-label">Best: <br><b id="best-score" style="font-size:24px;">0</b></div>
                 </div>
                 <div class="btn-container">
-                    <button class="btn btn-blue" id="btn-shop-over">Cửa Hàng</button>
-                    <button class="btn" id="btn-restart">Chơi Lại</button>
+                    <button class="btn btn-blue" id="btn-shop-over">Shop</button>
+                    <button class="btn" id="btn-restart">Restart</button>
                 </div>
             </div>
         </div>
     </div>
 
     <script>
+    /* ========== LANGUAGE LAYER ========== */
+    const LOCALES = {
+        en: {
+            code: 'en',
+            langLabel: 'EN',
+            startTitle: 'Flappy Star',
+            startDesc: 'Fly through the pipes!',
+            infoShield: 'Shield:',
+            infoStar: 'Star:',
+            infoFinish: 'Finish:',
+            infoNote: 'Note:',
+            shieldShort: 'Shield',
+            finishText: 'FINISH',
+            btnShop: 'Shop',
+            btnStart: 'Start',
+            shopTitle: 'Skins',
+            shopDescPrefix: 'You have:',
+            btnClose: 'Close',
+            gameOverTitle: 'Game Over',
+            scoreLabel: 'Score:',
+            bestLabel: 'Best:',
+            buyText: (price) => `${price} ⭐`,
+            selectText: 'Select',
+            usingText: 'Using',
+            notEnoughStars: "You don't have enough Stars!",
+            soundOn: '🔊 ON',
+            soundOff: '🔈 OFF',
+            plusShield: '+Shield',
+            plusStar: '+1 ⭐',
+            levelPrefix: 'Level: ',
+            starPrefix: '⭐ ',
+            langToggleTitle: 'Switch language'
+        },
+        vi: {
+            code: 'vi',
+            langLabel: 'VI',
+            startTitle: 'Flappy Sao',
+            startDesc: 'Vượt ống để qua màn!',
+            infoShield: 'Khiên:',
+            infoStar: 'Ngôi Sao:',
+            infoFinish: 'Đích:',
+            infoNote: 'Chú ý:',
+            shieldShort: 'Khiên',
+            finishText: 'ĐÍCH',
+            btnShop: 'Cửa Hàng',
+            btnStart: 'Bắt Đầu',
+            shopTitle: 'Trang Phục',
+            shopDescPrefix: 'Đang có:',
+            btnClose: 'Đóng',
+            gameOverTitle: 'Kết Thúc',
+            scoreLabel: 'Điểm:',
+            bestLabel: 'Kỷ Lục:',
+            buyText: (price) => `${price} ⭐`,
+            selectText: 'Chọn',
+            usingText: 'Đang Dùng',
+            notEnoughStars: "Bạn không đủ Ngôi Sao!",
+            soundOn: '🔊 BẬT',
+            soundOff: '🔈 TẮT',
+            plusShield: '+Khiên',
+            plusStar: '+1 ⭐',
+            levelPrefix: 'Cấp: ',
+            starPrefix: '⭐ ',
+            langToggleTitle: 'Chuyển ngôn ngữ'
+        }
+    };
+
+    // Use stored language if present, otherwise default to 'en'
+    let currentLang = localStorage.getItem('flappyLang') || 'en';
+    if (!LOCALES[currentLang]) currentLang = 'en';
+
+    function t(key, ...args) {
+        const v = LOCALES[currentLang][key];
+        if (typeof v === 'function') return v(...args);
+        return v ?? '';
+    }
+
+    function setDocumentLang() {
+        document.documentElement.lang = LOCALES[currentLang].code;
+    }
+
+    function applyTranslations() {
+        // top bar & controls
+        const langBtn = document.getElementById('lang-toggle');
+        if (langBtn) {
+            langBtn.innerText = LOCALES[currentLang].langLabel;
+            langBtn.title = t('langToggleTitle');
+        }
+        // Info / Start screen
+        document.getElementById('start-title').innerText = t('startTitle');
+        document.getElementById('start-desc').innerText = t('startDesc');
+
+        document.getElementById('info-shield').innerText = t('infoShield');
+        document.getElementById('info-star').innerText = t('infoStar');
+        document.getElementById('info-finish').innerText = t('infoFinish');
+        document.getElementById('info-note').innerText = t('infoNote');
+
+        document.getElementById('btn-shop-start').innerText = t('btnShop');
+        document.getElementById('btn-start').innerText = t('btnStart');
+
+        // Shop
+        document.getElementById('shop-title').innerText = t('shopTitle');
+        const sd = document.getElementById('shop-desc');
+        if (sd && sd.childNodes[0]) sd.childNodes[0].textContent = t('shopDescPrefix') + ' ';
+        document.getElementById('btn-close-shop').innerText = t('btnClose');
+
+        // Game over
+        document.getElementById('gameover-title').innerText = t('gameOverTitle');
+        const scoreLabelNode = document.getElementById('score-label');
+        if (scoreLabelNode && scoreLabelNode.childNodes[0]) scoreLabelNode.childNodes[0].textContent = t('scoreLabel') + ' ';
+        const bestLabelNode = document.getElementById('best-label');
+        if (bestLabelNode && bestLabelNode.childNodes[0]) bestLabelNode.childNodes[0].textContent = t('bestLabel') + ' ';
+        document.getElementById('btn-shop-over').innerText = t('btnShop');
+        document.getElementById('btn-restart').innerText = t('btnStart');
+
+        // sound button text
+        updateSoundButton();
+
+        // update top bar values text
+        updateTopBar();
+
+        setDocumentLang();
+    }
+
+    function toggleLanguage() {
+        currentLang = currentLang === 'en' ? 'vi' : 'en';
+        localStorage.setItem('flappyLang', currentLang);
+        applyTranslations();
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        const langBtn = document.getElementById('lang-toggle');
+        if (langBtn) langBtn.addEventListener('click', toggleLanguage);
+        applyTranslations();
+    });
+
     /* ========== GAME (giữ nguyên phần lớn logic) ========== */
     const canvas = document.getElementById('gameCanvas');
     const ctx = canvas.getContext('2d');
@@ -129,17 +279,17 @@
     });
 
     function updateSoundButton() {
-        soundToggleBtn.textContent = soundEnabled ? '🔊 BẬT' : '🔈 TẮT';
-        soundToggleBtn.title = soundEnabled ? 'Nhấn để tắt âm' : 'Nhấn để bật âm';
+        soundToggleBtn.textContent = soundEnabled ? t('soundOn') : t('soundOff');
+        soundToggleBtn.title = soundEnabled ? (currentLang === 'vi' ? 'Nhấn để tắt âm' : 'Press to mute') : (currentLang === 'vi' ? 'Nhấn để bật âm' : 'Press to unmute');
     }
 
     // Skins data
     const SKINS = [
-        { id:'pink', name:'Kẹo Ngọt', color:'#fd79a8', price:0 },
-        { id:'yellow', name:'Gà Vàng', color:'#f1c40f', price:10 },
-        { id:'gold', name:'Hoàng Đế', color:'#f39c12', price:30 },
-        { id:'blue', name:'Băng Giá', color:'#3498db', price:50 },
-        { id:'red', name:'Chim Điên', color:'#e74c3c', price:100 },
+        { id:'pink', name:'Candy', color:'#fd79a8', price:0 },
+        { id:'yellow', name:'Chick', color:'#f1c40f', price:10 },
+        { id:'gold', name:'Emperor', color:'#f39c12', price:30 },
+        { id:'blue', name:'Frost', color:'#3498db', price:50 },
+        { id:'red', name:'Angry', color:'#e74c3c', price:100 },
         { id:'black', name:'Ninja', color:'#2c3e50', price:999 }
     ];
 
@@ -158,8 +308,8 @@
         updateTopBar();
     }
     function updateTopBar() {
-        ui.levelDisplay.innerText = `Cấp: ${currentLevel}`;
-        ui.starDisplay.innerText = `⭐ ${totalStars}`;
+        document.getElementById('level-display').innerText = `${t('levelPrefix')}${currentLevel}`;
+        document.getElementById('star-display').innerText = `${t('starPrefix')}${totalStars}`;
     }
 
     function resizeCanvas() {
@@ -191,7 +341,7 @@
         ui.effectsBoard.innerHTML = '';
         if (effects.shieldCount > 0) {
             let shieldsText = '🛡️'.repeat(effects.shieldCount);
-            ui.effectsBoard.innerHTML += `<div class="effect-badge">${shieldsText} Khiên: ${effects.shieldCount}/3</div>`;
+            ui.effectsBoard.innerHTML += `<div class="effect-badge">${shieldsText} ${t('shieldShort')}: ${effects.shieldCount}/3</div>`;
         }
     }
 
@@ -257,7 +407,6 @@
             ctx.stroke();
 
             // skin-specific decorations...
-            /* (giữ nguyên phần vẽ các skin như trước — để ngắn gọn mình giữ nguyên logic từ code bạn gửi) */
             if (currentSkinId === 'yellow') {
                 ctx.fillStyle = '#e74c3c';
                 ctx.beginPath(); ctx.arc(0, -this.radius*0.8, this.radius*0.35, 0, Math.PI, true); ctx.fill(); ctx.stroke();
@@ -337,10 +486,10 @@
                 if (effects.shieldCount < 3) effects.shieldCount++;
                 updateEffectsUI();
                 Sound.play('shield');
-                floatingTexts.add(x,y,'+Khiên','#3498db',20);
+                floatingTexts.add(x,y,t('plusShield'),'#3498db',20);
             } else if (id === 'STAR') {
                 totalStars++; saveData();
-                floatingTexts.add(x,y,'+1 ⭐','#f1c40f',24);
+                floatingTexts.add(x,y,t('plusStar'),'#f1c40f',24);
                 Sound.play('collect');
             }
         },
@@ -388,7 +537,7 @@
                     if (!p.broken) {
                         score++;
                         ui.scoreBoard.innerText = score;
-                        Sound.play('score');
+                        // Sound.play('score');
                     }
                     if (p.isFinishLine) doLevelUp(p.x + pipeWidth/2, bird.y);
                 }
@@ -423,7 +572,7 @@
                     ctx.font = 'bold 20px Arial';
                     ctx.textAlign = 'center';
                     ctx.lineWidth = 3; ctx.strokeStyle = 'black';
-                    ctx.strokeText("ĐÍCH", 0, 0); ctx.fillText("ĐÍCH", 0, 0);
+                    ctx.strokeText(t('finishText'), 0, 0); ctx.fillText(t('finishText'), 0, 0);
                     ctx.restore();
                 }
             }
@@ -437,8 +586,7 @@
         totalStars += bonusStars;
         saveData();
         floatingTexts.add(x || canvas.width/2, y || canvas.height/2, `+${bonusStars} ⭐`, '#f1c40f', 36);
-        ui.levelDisplay.innerText = `Cấp: ${currentLevel}`;
-        ui.starDisplay.innerText = `⭐ ${totalStars}`;
+        updateTopBar();
         Sound.play('levelup');
     }
 
@@ -515,13 +663,13 @@
     function openShop() { previousState = currentState; currentState = GAME_STATE.SHOP; showScreen('shop'); renderShop(); }
     function closeShop() { bird.updateSkinColor(); if (previousState === GAME_STATE.READY) { currentState = GAME_STATE.READY; showScreen('start'); } else if (previousState === GAME_STATE.GAMEOVER) { currentState = GAME_STATE.GAMEOVER; showScreen('gameOver'); } }
     function renderShop() {
-        ui.shopStars.innerText = totalStars; ui.shopList.innerHTML = '';
+        document.getElementById('shop-stars').innerText = totalStars; ui.shopList.innerHTML = '';
         SKINS.forEach(skin => {
             let isOwned = ownedSkins.includes(skin.id); let isSelected = currentSkinId === skin.id;
             let btnHtml = '';
-            if (isSelected) btnHtml = `<button class="shop-btn btn-selected">Đang Dùng</button>`;
-            else if (isOwned) btnHtml = `<button class="shop-btn btn-select" onclick="selectSkin('${skin.id}')">Chọn</button>`;
-            else btnHtml = `<button class="shop-btn btn-buy" onclick="buySkin('${skin.id}', ${skin.price})">${skin.price} ⭐</button>`;
+            if (isSelected) btnHtml = `<button class="shop-btn btn-selected">${t('usingText')}</button>`;
+            else if (isOwned) btnHtml = `<button class="shop-btn btn-select" onclick="selectSkin('${skin.id}')">${t('selectText')}</button>`;
+            else btnHtml = `<button class="shop-btn btn-buy" onclick="buySkin('${skin.id}', ${skin.price})">${t('buyText', skin.price)}</button>`;
             ui.shopList.innerHTML += `
                 <div class="shop-item">
                     <div class="skin-preview" style="background-color: ${skin.color}"></div>
@@ -533,7 +681,7 @@
     }
     window.buySkin = function(id, price) {
         if (totalStars >= price) { totalStars -= price; ownedSkins.push(id); currentSkinId = id; saveData(); renderShop(); Sound.play('buy'); }
-        else alert("Bạn không đủ Ngôi Sao!");
+        else alert(t('notEnoughStars'));
     }
     window.selectSkin = function(id) { currentSkinId = id; saveData(); renderShop(); Sound.play('select'); }
 
@@ -583,7 +731,7 @@
     document.getElementById('btn-close-shop').addEventListener('click', closeShop);
 
     // Boot
-    updateTopBar(); initGame(); requestAnimationFrame(loop);
+    applyTranslations(); updateTopBar(); initGame(); requestAnimationFrame(loop);
 
     /* ========== SOUND SYSTEM (WebAudio-based, synth tones) ========== */
     const Sound = (function(){
@@ -595,7 +743,7 @@
             const AudioContext = window.AudioContext || window.webkitAudioContext;
             audioCtx = new AudioContext();
             masterGain = audioCtx.createGain();
-            masterGain.gain.value = 0.18; // tổng âm lượng (có thể chỉnh)
+            masterGain.gain.value = 1; // tổng âm lượng (có thể chỉnh)
             masterGain.connect(audioCtx.destination);
         }
 
