@@ -28,12 +28,12 @@
         .btn-green { background:#2ecc71; box-shadow:0 4px 0 #27ae60; }
         .shop-items { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:15px; max-height:250px; overflow-y:auto; }
         .shop-item { background:rgba(255,255,255,0.6); border:2px solid #543847; border-radius:10px; padding:10px; display:flex; flex-direction:column; align-items:center; }
-        .skin-preview { width:40px; height:40px; border-radius:50%; border:2px solid #000; margin-bottom:5px; }
+        .skin-preview { width:40px; height:40px; border-radius:50%; border:2px solid #000; margin-bottom:5px; overflow:hidden; display:flex; align-items:center; justify-content:center; background:#fff; }
+        .skin-preview img { width:100%; height:100%; object-fit:cover; display:block; }
         .shop-btn { padding:5px 10px; font-size:14px; border:2px solid #fff; border-radius:5px; cursor:pointer; font-weight:bold; color:white; width:100%; }
         .btn-buy { background:#f1c40f; color:#000; box-shadow:0 3px 0 #f39c12; }
         .btn-select { background:#3498db; box-shadow:0 3px 0 #2980b9; }
         .btn-selected { background:#2ecc71; box-shadow:0 3px 0 #27ae60; cursor:default;}
-        /* nút âm thanh */
         #sound-toggle { pointer-events:auto; background:rgba(0,0,0,0.35); color:white; border-radius:8px; padding:6px 8px; font-weight:bold; font-size:14px; border:2px solid rgba(255,255,255,0.12); cursor:pointer; display:flex; gap:6px; align-items:center; }
     </style>
 </head>
@@ -94,7 +94,19 @@
     </div>
 
     <script>
-    /* ========== GAME (giữ nguyên phần lớn logic) ========== */
+    /***** CẤU HÌNH SKIN (sửa số lượng ở đây nếu cần) *****/
+    const SKINS = [
+        { id: 'skin01', name: 'Skin 01', file: 'rumi.png', price: 0 },
+        { id: 'skin02', name: 'Skin 02', file: 'mira.png', price: 0 },
+        { id: 'skin03', name: 'Skin 03', file: 'zoey.png', price: 0 },
+        { id: 'skin04', name: 'Skin 04', file: 'jinu.png', price: 0 },
+        { id: 'skin05', name: 'Skin 05', file: 'abs.png', price: 0 },
+        { id: 'skin05', name: 'Skin 05', file: 'romance.png', price: 0 },
+        { id: 'skin05', name: 'Skin 05', file: 'mystery.png', price: 0 },
+        { id: 'skin06', name: 'Skin 06', file: 'baby.png', price: 0 }
+    ];
+    /***** KẾT THÚC CẤU HÌNH *****/
+
     const canvas = document.getElementById('gameCanvas');
     const ctx = canvas.getContext('2d');
     const container = document.getElementById('game-container');
@@ -113,35 +125,39 @@
     // Storage
     let bestScore = parseInt(localStorage.getItem('flappyStarsBest')) || 0;
     let totalStars = parseInt(localStorage.getItem('flappyTotalStars')) || 0;
-    let ownedSkins = JSON.parse(localStorage.getItem('flappySkins')) || ['pink'];
-    let currentSkinId = localStorage.getItem('flappyCurrentSkin') || 'pink';
+    let ownedSkins = JSON.parse(localStorage.getItem('flappySkins')) || [SKINS[0].id];
+    let currentSkinId = localStorage.getItem('flappyCurrentSkin') || SKINS[0].id;
 
-    // Sounds setting
+    // Sound
     let soundEnabled = (localStorage.getItem('flappySound') ?? '1') === '1';
     const soundToggleBtn = document.getElementById('sound-toggle');
     updateSoundButton();
-
     soundToggleBtn.addEventListener('click', () => {
         soundEnabled = !soundEnabled;
         localStorage.setItem('flappySound', soundEnabled ? '1' : '0');
         updateSoundButton();
-        if (soundEnabled) resumeAudio(); // cố resume khi bật lại
+        if (soundEnabled) resumeAudio();
     });
-
     function updateSoundButton() {
         soundToggleBtn.textContent = soundEnabled ? '🔊 BẬT' : '🔈 TẮT';
         soundToggleBtn.title = soundEnabled ? 'Nhấn để tắt âm' : 'Nhấn để bật âm';
     }
 
-    // Skins data
-    const SKINS = [
-        { id:'pink', name:'Kẹo Ngọt', color:'#fd79a8', price:0 },
-        { id:'yellow', name:'Gà Vàng', color:'#f1c40f', price:10 },
-        { id:'red', name:'Chim Điên', color:'#e74c3c', price:30 },
-        { id:'blue', name:'Băng Giá', color:'#3498db', price:50 },
-        { id:'gold', name:'Hoàng Đế', color:'#f39c12', price:100 },
-        { id:'black', name:'Ninja', color:'#2c3e50', price:999 }
-    ];
+    // Preload skin images
+    const skinImages = {}; // map id -> Image
+    function preloadSkins(onProgress) {
+        const promises = [];
+        SKINS.forEach(s => {
+            const img = new Image();
+            img.src = s.file;
+            skinImages[s.id] = img;
+            promises.push(new Promise(resolve => {
+                img.onload = () => resolve({id: s.id, ok: true});
+                img.onerror = () => resolve({id: s.id, ok: false});
+            }));
+        });
+        return Promise.all(promises);
+    }
 
     // Physics / sizes
     let baseGravity=0, baseJumpForce=0, basePipeSpeed=0, pipeSpeed=0, pipeGap=0, pipeWidth=0, groundHeight=0;
@@ -174,12 +190,8 @@
         pipeGap = canvas.height * 0.28;
         groundHeight = canvas.height * 0.15;
 
-        if (bird.radius === 0) {
-            bird.init();
-        } else {
-            bird.radius = canvas.height * 0.02;
-            bird.x = canvas.width * 0.25;
-        }
+        if (bird.radius === 0) bird.init();
+        else { bird.radius = canvas.height * 0.02; bird.x = canvas.width * 0.25; }
     }
     window.addEventListener('resize', resizeCanvas);
 
@@ -195,20 +207,20 @@
         }
     }
 
-    // ---------------- BIRD ----------------
+    // --- BIRD with image support ---
     const bird = {
-        x:0,y:0,radius:0,velocity:0,rotation:0,color:'#f1c40f',
+        x:0,y:0,radius:0,velocity:0,rotation:0,color:'#f1c40f', image: null,
         init() {
-            this.radius = canvas.height * 0.02;
+            this.radius = canvas.height * 0.035;
             this.x = canvas.width * 0.25;
             this.y = canvas.height / 2;
             this.velocity = 0;
             this.rotation = 0;
-            this.updateSkinColor();
+            this.updateSkinImage();
         },
-        updateSkinColor() {
-            const skin = SKINS.find(s => s.id === currentSkinId);
-            this.color = skin ? skin.color : '#f1c40f';
+        updateSkinImage() {
+            const img = skinImages[currentSkinId];
+            this.image = (img && img.complete) ? img : null;
         },
         flap() {
             this.velocity = baseJumpForce;
@@ -228,57 +240,24 @@
 
             if (effects.invincibleTimer > 0 && Math.floor(frames / 5) % 2 === 0) ctx.globalAlpha = 0.5;
 
-            // body
-            ctx.beginPath();
-            ctx.arc(0,0,this.radius,0,Math.PI*2);
-            ctx.fillStyle = this.color;
-            ctx.fill();
-            ctx.lineWidth = 2; ctx.strokeStyle = '#000'; ctx.stroke();
-
-            // eye white
-            ctx.beginPath();
-            ctx.arc(this.radius/2, -this.radius/4, this.radius/3, 0, Math.PI*2);
-            ctx.fillStyle = '#fff';
-            ctx.fill();
-
-            // pupil
-            ctx.beginPath();
-            let pupilOffsetX = currentSkinId === 'red' ? 2 : 1;
-            ctx.arc(this.radius/2 + pupilOffsetX, -this.radius/4, this.radius/6, 0, Math.PI*2);
-            ctx.fillStyle = '#000'; ctx.fill();
-
-            // beak
-            ctx.beginPath();
-            ctx.moveTo(this.radius*0.8,0);
-            ctx.lineTo(this.radius*1.6,0);
-            ctx.lineTo(this.radius*0.8,this.radius/2);
-            ctx.fillStyle = '#e67e22';
-            ctx.fill();
-            ctx.stroke();
-
-            // skin-specific decorations...
-            /* (giữ nguyên phần vẽ các skin như trước — để ngắn gọn mình giữ nguyên logic từ code bạn gửi) */
-            if (currentSkinId === 'yellow') {
-                ctx.fillStyle = '#e74c3c';
-                ctx.beginPath(); ctx.arc(0, -this.radius*0.8, this.radius*0.35, 0, Math.PI, true); ctx.fill(); ctx.stroke();
-            } else if (currentSkinId === 'red') {
-                ctx.fillStyle = '#000';
-                ctx.beginPath(); ctx.moveTo(this.radius*0.1, -this.radius*0.4); ctx.lineTo(this.radius*0.9, -this.radius*0.7); ctx.lineTo(this.radius*0.9, -this.radius*0.5); ctx.lineTo(this.radius*0.1, -this.radius*0.2); ctx.fill();
-                ctx.beginPath(); ctx.moveTo(-this.radius,0); ctx.lineTo(-this.radius*1.6, -this.radius*0.4); ctx.lineTo(-this.radius*0.9, -this.radius*0.1); ctx.fill();
-            } else if (currentSkinId === 'blue') {
-                ctx.fillStyle = '#00ffff';
-                ctx.beginPath(); ctx.moveTo(-this.radius*0.2, -this.radius*0.8); ctx.lineTo(this.radius*0.2, -this.radius*1.5); ctx.lineTo(this.radius*0.5, -this.radius*0.7); ctx.fill(); ctx.stroke();
-            } else if (currentSkinId === 'black') {
-                ctx.fillStyle = '#e74c3c';
-                ctx.fillRect(-this.radius, -this.radius*0.7, this.radius*2, this.radius*0.3);
-                let flapOffset = Math.sin(frames * 0.5) * 5;
-                ctx.beginPath(); ctx.moveTo(-this.radius*0.8, -this.radius*0.5); ctx.lineTo(-this.radius*1.8, -this.radius*0.8 + flapOffset); ctx.lineTo(-this.radius*1.6, -this.radius*0.3 + flapOffset); ctx.fill(); ctx.stroke();
-            } else if (currentSkinId === 'pink') {
-                ctx.fillStyle = 'rgba(255, 105, 180, 0.7)';
-                ctx.beginPath(); ctx.arc(this.radius*0.2, this.radius*0.3, this.radius*0.25, 0, Math.PI*2); ctx.fill();
-            } else if (currentSkinId === 'gold') {
-                ctx.fillStyle = '#f1c40f';
-                ctx.beginPath(); ctx.moveTo(-this.radius*0.6, -this.radius*0.7); ctx.lineTo(-this.radius*0.8, -this.radius*1.5); ctx.lineTo(0, -this.radius*1.1); ctx.lineTo(this.radius*0.8, -this.radius*1.5); ctx.lineTo(this.radius*0.6, -this.radius*0.7); ctx.closePath(); ctx.fill(); ctx.stroke();
+            if (this.image) {
+                // scale giữ tỉ lệ, fit vào vòng tròn radius
+                const iw = this.image.width, ih = this.image.height;
+                const targetSize = this.radius * 2;
+                const scale = targetSize / Math.max(iw, ih);
+                const w = iw * scale, h = ih * scale;
+                ctx.drawImage(this.image, -w/2, -h/2, w, h);
+            } else {
+                // fallback: vẽ hình tròn nếu ảnh chưa load
+                ctx.beginPath();
+                ctx.arc(0,0,this.radius,0,Math.PI*2);
+                ctx.fillStyle = this.color;
+                ctx.fill();
+                ctx.lineWidth = 2; ctx.strokeStyle = '#000'; ctx.stroke();
+                // mắt + mỏ đơn giản
+                ctx.beginPath(); ctx.arc(this.radius/2, -this.radius/4, this.radius/3, 0, Math.PI*2); ctx.fillStyle = '#fff'; ctx.fill();
+                ctx.beginPath(); ctx.arc(this.radius/2 + 1, -this.radius/4, this.radius/6, 0, Math.PI*2); ctx.fillStyle = '#000'; ctx.fill();
+                ctx.beginPath(); ctx.moveTo(this.radius*0.8,0); ctx.lineTo(this.radius*1.6,0); ctx.lineTo(this.radius*0.8,this.radius/2); ctx.fillStyle = '#e67e22'; ctx.fill(); ctx.stroke();
             }
 
             if (effects.shieldCount > 0) {
@@ -290,24 +269,7 @@
     };
 
     // Floating texts
-    const floatingTexts = {
-        items: [],
-        add(x,y,text,color='#f1c40f',size=24) { this.items.push({x,y,text,color,size,life:0,maxLife:45}); },
-        updateAndDraw() {
-            for (let i=0;i<this.items.length;i++){
-                let ft = this.items[i];
-                ft.life++; ft.y -= 1.5;
-                ctx.save();
-                ctx.globalAlpha = Math.max(0, 1 - (ft.life / ft.maxLife));
-                ctx.fillStyle = ft.color;
-                ctx.font = `bold ${ft.size}px Arial`;
-                ctx.strokeStyle = 'black'; ctx.lineWidth = 3; ctx.textAlign='center';
-                ctx.strokeText(ft.text, ft.x, ft.y); ctx.fillText(ft.text, ft.x, ft.y);
-                ctx.restore();
-                if (ft.life >= ft.maxLife) { this.items.splice(i,1); i--; }
-            }
-        }
-    };
+    const floatingTexts = { items: [], add(x,y,text,color='#f1c40f',size=24){ this.items.push({x,y,text,color,size,life:0,maxLife:45}); }, updateAndDraw(){ for (let i=0;i<this.items.length;i++){ let ft=this.items[i]; ft.life++; ft.y-=1.5; ctx.save(); ctx.globalAlpha = Math.max(0,1-(ft.life/ft.maxLife)); ctx.fillStyle=ft.color; ctx.font=`bold ${ft.size}px Arial`; ctx.strokeStyle='black'; ctx.lineWidth=3; ctx.textAlign='center'; ctx.strokeText(ft.text, ft.x, ft.y); ctx.fillText(ft.text, ft.x, ft.y); ctx.restore(); if (ft.life>=ft.maxLife){ this.items.splice(i,1); i--; } } } };
 
     // Collectables
     const collectables = {
@@ -315,16 +277,16 @@
         types: [ { id:'SHIELD', color:'#3498db', symbol:'🛡️', chance:25 }, { id:'STAR', color:'#f1c40f', symbol:'⭐', chance:75 } ],
         init() { this.items = []; },
         spawn(x,y) {
-            let rand = Math.random() * 100; let sum = 0, selected = this.types[0];
-            for (let t of this.types) { sum += t.chance; if (rand <= sum) { selected = t; break; } }
+            let rand = Math.random()*100, sum=0, selected=this.types[0];
+            for (let t of this.types){ sum += t.chance; if (rand <= sum){ selected = t; break; } }
             this.items.push({ x:x, y:y, type:selected, radius:canvas.height * 0.025, collected:false });
         },
         update() {
             for (let i=0;i<this.items.length;i++){
-                let item = this.items[i];
+                const item = this.items[i];
                 if (item.collected) continue;
                 item.x -= pipeSpeed;
-                let dist = Math.hypot(bird.x - item.x, bird.y - item.y);
+                const dist = Math.hypot(bird.x - item.x, bird.y - item.y);
                 if (dist < bird.radius + item.radius) {
                     item.collected = true;
                     this.applyEffect(item.type.id, item.x, item.y);
@@ -335,26 +297,12 @@
         applyEffect(id,x,y) {
             if (id === 'SHIELD') {
                 if (effects.shieldCount < 3) effects.shieldCount++;
-                updateEffectsUI();
-                Sound.play('shield');
-                floatingTexts.add(x,y,'+Khiên','#3498db',20);
+                updateEffectsUI(); Sound.play('shield'); floatingTexts.add(x,y,'+Khiên','#3498db',20);
             } else if (id === 'STAR') {
-                totalStars++; saveData();
-                floatingTexts.add(x,y,'+1 ⭐','#f1c40f',24);
-                Sound.play('collect');
+                totalStars++; saveData(); floatingTexts.add(x,y,'+1 ⭐','#f1c40f',24); Sound.play('collect');
             }
         },
-        draw() {
-            for (let it of this.items) {
-                if (it.collected) continue;
-                ctx.save(); ctx.translate(it.x, it.y);
-                let hover = Math.sin(frames * 0.1) * 5;
-                ctx.beginPath(); ctx.arc(0, hover, it.radius, 0, Math.PI*2); ctx.fillStyle = it.type.color; ctx.fill();
-                ctx.lineWidth = 2; ctx.strokeStyle = '#fff'; ctx.stroke();
-                ctx.fillStyle = '#fff'; ctx.font = `${it.radius}px Arial`; ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillText(it.type.symbol, 0, hover+2);
-                ctx.restore();
-            }
-        }
+        draw() { for (let it of this.items){ if (it.collected) continue; ctx.save(); ctx.translate(it.x, it.y); let hover = Math.sin(frames * 0.1) * 5; ctx.beginPath(); ctx.arc(0, hover, it.radius, 0, Math.PI*2); ctx.fillStyle = it.type.color; ctx.fill(); ctx.lineWidth = 2; ctx.strokeStyle = '#fff'; ctx.stroke(); ctx.fillStyle = '#fff'; ctx.font = `${it.radius}px Arial`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(it.type.symbol, 0, hover+2); ctx.restore(); } }
     };
 
     // Pipes
@@ -497,7 +445,7 @@
         currentState = GAME_STATE.PLAYING;
         showScreen(null);
         ui.scoreBoard.classList.remove('hidden');
-        bird.flap(); // nhảy 1 lần khi bắt đầu
+        bird.flap();
     }
 
     function setGameOver() {
@@ -513,7 +461,7 @@
 
     // Shop
     function openShop() { previousState = currentState; currentState = GAME_STATE.SHOP; showScreen('shop'); renderShop(); }
-    function closeShop() { bird.updateSkinColor(); if (previousState === GAME_STATE.READY) { currentState = GAME_STATE.READY; showScreen('start'); } else if (previousState === GAME_STATE.GAMEOVER) { currentState = GAME_STATE.GAMEOVER; showScreen('gameOver'); } }
+    function closeShop() { bird.updateSkinImage(); if (previousState === GAME_STATE.READY) { currentState = GAME_STATE.READY; showScreen('start'); } else if (previousState === GAME_STATE.GAMEOVER) { currentState = GAME_STATE.GAMEOVER; showScreen('gameOver'); } }
     function renderShop() {
         ui.shopStars.innerText = totalStars; ui.shopList.innerHTML = '';
         SKINS.forEach(skin => {
@@ -522,9 +470,11 @@
             if (isSelected) btnHtml = `<button class="shop-btn btn-selected">Đang Dùng</button>`;
             else if (isOwned) btnHtml = `<button class="shop-btn btn-select" onclick="selectSkin('${skin.id}')">Chọn</button>`;
             else btnHtml = `<button class="shop-btn btn-buy" onclick="buySkin('${skin.id}', ${skin.price})">${skin.price} ⭐</button>`;
+
+            // preview bằng ảnh (dùng đường dẫn file)
             ui.shopList.innerHTML += `
                 <div class="shop-item">
-                    <div class="skin-preview" style="background-color: ${skin.color}"></div>
+                    <div class="skin-preview"><img src="${skin.file}" alt="${skin.name}" onerror="this.style.opacity=0.45;"></div>
                     <strong style="margin-bottom:5px; font-size:14px;">${skin.name}</strong>
                     ${btnHtml}
                 </div>
@@ -532,10 +482,15 @@
         });
     }
     window.buySkin = function(id, price) {
-        if (totalStars >= price) { totalStars -= price; ownedSkins.push(id); currentSkinId = id; saveData(); renderShop(); Sound.play('buy'); }
-        else alert("Bạn không đủ Ngôi Sao!");
+        if (totalStars >= price) {
+            totalStars -= price;
+            if (!ownedSkins.includes(id)) ownedSkins.push(id);
+            currentSkinId = id;
+            saveData(); renderShop(); Sound.play('buy');
+            bird.updateSkinImage();
+        } else alert("Bạn không đủ Ngôi Sao!");
     }
-    window.selectSkin = function(id) { currentSkinId = id; saveData(); renderShop(); Sound.play('select'); }
+    window.selectSkin = function(id) { currentSkinId = id; saveData(); renderShop(); Sound.play('select'); bird.updateSkinImage(); }
 
     // Loop & Input
     function loop(timestamp) {
@@ -582,8 +537,12 @@
     document.getElementById('btn-shop-over').addEventListener('click', openShop);
     document.getElementById('btn-close-shop').addEventListener('click', closeShop);
 
-    // Boot
-    updateTopBar(); initGame(); requestAnimationFrame(loop);
+    // Boot: preload skins then init
+    preloadSkins().then(results => {
+        // results là mảng {id, ok} — nếu ảnh lỗi, ok=false nhưng game vẫn chạy fallback
+        initGame();
+        requestAnimationFrame(loop);
+    });
 
     /* ========== SOUND SYSTEM (WebAudio-based, synth tones) ========== */
     const Sound = (function(){
@@ -595,7 +554,7 @@
             const AudioContext = window.AudioContext || window.webkitAudioContext;
             audioCtx = new AudioContext();
             masterGain = audioCtx.createGain();
-            masterGain.gain.value = 0.18; // tổng âm lượng (có thể chỉnh)
+            masterGain.gain.value = 0.18;
             masterGain.connect(audioCtx.destination);
         }
 
@@ -642,54 +601,32 @@
                 if (!soundEnabled) return;
                 if (!audioCtx) init();
                 switch (key) {
-                    case 'flap':
-                        playTone(880, 'sawtooth', 0.06, 0, 0.08, true);
-                        break;
-                    case 'score':
-                        playSequence([880, 1047, 1318], 'square', 0.09, 0.02);
-                        break;
-                    case 'collect':
-                        playSequence([988, 1175, 1408], 'triangle', 0.07, 0.02);
-                        break;
-                    case 'shield':
-                        playSequence([440, 660], 'sine', 0.12, 0.03);
-                        break;
-                    case 'shield-used':
-                        playTone(330, 'sine', 0.18, 0, 0.14);
-                        break;
-                    case 'levelup':
-                        playSequence([523, 659, 783, 1047], 'sawtooth', 0.12, 0.03);
-                        break;
-                    case 'gameover':
-                        playSequence([220, 196, 164], 'sine', 0.22, 0.06);
-                        break;
-                    case 'buy':
-                        playSequence([700, 840], 'sine', 0.09, 0.03);
-                        break;
-                    case 'select':
-                        playTone(760, 'triangle', 0.08, 0, 0.12);
-                        break;
+                    case 'flap': playTone(880, 'sawtooth', 0.06, 0, 0.08, true); break;
+                    case 'score': playSequence([880,1047,1318],'square',0.09,0.02); break;
+                    case 'collect': playSequence([988,1175,1408],'triangle',0.07,0.02); break;
+                    case 'shield': playSequence([440,660],'sine',0.12,0.03); break;
+                    case 'shield-used': playTone(330,'sine',0.18,0,0.14); break;
+                    case 'levelup': playSequence([523,659,783,1047],'sawtooth',0.12,0.03); break;
+                    case 'gameover': playSequence([220,196,164],'sine',0.22,0.06); break;
+                    case 'buy': playSequence([700,840],'sine',0.09,0.03); break;
+                    case 'select': playTone(760,'triangle',0.08,0,0.12); break;
                     default: break;
                 }
             }
         };
     })();
 
-    // resumeAudio helper — gọi khi có gesture
     function resumeAudio() {
-        try {
-            Sound.resume();
-        } catch (e) { /* ignore */ }
+        try { Sound.resume(); } catch(e) {}
     }
 
-    // resume on any initial user gesture (also helpful for mobile browsers)
+    // resume audio on first user gesture (mobile)
     ['touchstart','mousedown','keydown','click'].forEach(evt => {
         window.addEventListener(evt, function onceResume() {
             resumeAudio();
             window.removeEventListener(evt, onceResume);
         });
     });
-
     </script>
 </body>
 </html>
